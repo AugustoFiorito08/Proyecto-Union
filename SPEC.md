@@ -3,7 +3,7 @@
 **Versión:** 4.0 (Especificación Técnica Consolidada)
 **Basado en:** `CAU_Requerimientos_Funcionales_v3.pdf`
 **Fecha:** 2026-08-27
-**Convención de trazabilidad:** los requerimientos heredados del documento v3 conservan su ID original (`RF-XXX-NN`). Los requerimientos y reglas de negocio nuevos, producto de esta auditoría, se marcan como **[NUEVO-SPEC]**.
+**Convención de trazabilidad:** los requerimientos heredados del documento v3 conservan su ID original (`RF-XXX-NN`). Los requerimientos y reglas de negocio nuevos, producto de la auditoría contra el PDF v3, se marcan como **[NUEVO-SPEC]**. Los campos, entidades y reglas detectados en la auditoría visual del diseño de Figma (§7) se marcan como **[NUEVO-SPEC-UI]**.
 
 ---
 
@@ -185,6 +185,19 @@ Al pagar una cuota familiar (RF-GF-04 bis), la cuota se emite a nombre del titul
 
 - **RN-FIN-06 [NUEVO-SPEC]:** La Cuota de un Grupo Familiar es visible en el Portal del Socio de **todos** los integrantes con cuenta propia (en modo solo lectura para no titulares), pero solo el **titular** puede iniciar el pago desde su portal. Empleado/Administrador pueden registrar el pago manualmente sin esta restricción.
 
+### 3.16 [NUEVO-SPEC-UI] Pago de múltiples cuotas en una sola operación
+
+El diseño de Figma (`PAGOS OPCIONES DE ACTUALIZACION.png`, `SOCIOS-PAGOS.png`) muestra un flujo de "Actualizar cuotas" donde el socio selecciona varias cuotas pendientes con checkbox y las paga con un único botón "Pagar todo" / un único checkout de Mercado Pago. Esto no es lo mismo que RN-FIN-05 (que prohíbe fraccionar el pago de **una** cuota): acá es un pago que, en una sola transacción de origen, cancela **varias** cuotas completas.
+
+- **RN-FIN-07 [NUEVO-SPEC-UI]:** "Pagar todo" se resuelve generando **N registros de `Pago`** (uno por cada `Cuota` cancelada), preservando la relación 1:1 `Pago`↔`Cuota` de RF-FIN-34 sin necesitar tabla puente. Cuando el medio es Mercado Pago, los N `Pago` comparten el mismo `MercadoPagoTransaccionId`; el frontend los agrupa visualmente como un único comprobante. Cuando el pago es manual (registrado por Empleado/Admin), se generan igual N filas de `Pago` en la misma operación de base de datos (transacción atómica EF Core).
+
+### 3.17 [NUEVO-SPEC-UI] Múltiples instructores por actividad y divisiones deportivas
+
+El diseño (`ACTIVIDADES.png`, `Categorias deportes.png`) muestra dos cosas que el modelo v3 no contempla: (a) una Actividad puede tener **varios** instructores (columna "Profesores" con avatares múltiples), no uno solo; y (b) dentro de una Actividad existen **divisiones** por edad/género con horario e instructores propios (ej. "Fútbol Infantil Sub13"), un concepto distinto de `Categoria` (que en el modelo v3 es la categoría de socio que define `ValorCuota`).
+
+- **RN-ACT-02 [NUEVO-SPEC-UI]:** Se reemplaza el FK único `Actividad.InstructorId` por una relación N:M (`ActividadInstructor`). Se introduce la entidad `DivisionDeportiva` para modelar las divisiones edad/género dentro de una Actividad, cada una con sus propios instructores (`DivisionInstructor`, N:M). La regla heredada RF-ACT-24 bis ("instructor obligatorio si Estado=Activa") se reinterpreta como: debe existir al menos un registro en `DivisionInstructor` (si la Actividad tiene divisiones) o en `ActividadInstructor` (si no las tiene) antes de poder activarla.
+- La inscripción de un socio (`Inscripcion`) pasa a poder referenciar una `DivisionDeportiva` puntual además de la `Actividad` — ver cambios en §4.2.
+
 ---
 
 ## 4. Modelo de Datos
@@ -200,15 +213,22 @@ erDiagram
 
     Socio }o--|| Categoria : pertenece
     Socio }o--o| CoberturaMedica : usa
+    Socio }o--o| Plan : "plan específico"
+    CoberturaMedica ||--o{ Plan : ofrece
     Socio }o--o| GrupoFamiliar : integra
     GrupoFamiliar ||--|| Socio : "titular"
 
     Socio ||--o{ Inscripcion : realiza
     Inscripcion }o--|| Actividad : en
-    Actividad }o--|| Instructor : dictada_por
+    Inscripcion }o--o| DivisionDeportiva : "división (opcional)"
+    Actividad ||--o{ DivisionDeportiva : agrupa
+    Actividad }o--o{ Instructor : "dictada por (N:M)"
+    DivisionDeportiva }o--o{ Instructor : "dictada por (N:M)"
+    Actividad }o--o| Espacio : "se dicta en"
 
     Socio ||--o{ Reserva : solicita
     Reserva }o--|| Espacio : de
+    Espacio }o--o{ Amenity : ofrece
 
     Socio ||--o{ Cuota : "genera (individual)"
     GrupoFamiliar ||--o{ Cuota : "genera (familiar)"
@@ -216,8 +236,10 @@ erDiagram
     Reserva ||--o| Pago : "cancelada por"
 
     Socio ||--o{ RegistroAcceso : registra
+    Socio ||--o{ ConsultaSocio : envía
 
     Comunicacion ||--o{ ComunicacionDestinatario : envia_a
+    Comunicacion ||--o{ ComunicacionAdjunto : adjunta
     Usuario ||--o{ LogAuditoria : genera
 ```
 
@@ -227,13 +249,13 @@ erDiagram
 `Id, NombreUsuario, Email, PasswordHash, RolId (FK Rol), Estado, RecordarSesionToken, FechaCreacion, FechaUltimoAcceso`
 
 **Rol** / **Permiso** / **RolPermiso** (RBAC dinámico, RF-CONF-08/09)
-`Rol(Id, Nombre, EsRolDeSistema)`, `Permiso(Id, Codigo, Descripcion, Modulo)`, `RolPermiso(RolId, PermisoId)`
+`Rol(Id, Nombre, Descripcion [NUEVO-SPEC-UI], Estado [NUEVO-SPEC-UI], EsRolDeSistema)`, `Permiso(Id, Codigo, Descripcion, Modulo)`, `RolPermiso(RolId, PermisoId)`
 
 **Socio**
-`Id, UsuarioId (FK), NumeroSocio (autogenerado), Apellido, Nombres, DNI (UNIQUE), CUIL, FechaNacimiento, Genero, Nacionalidad, TipoPago, CategoriaId (FK), Telefono, Celular, Email (UNIQUE), Domicilio, Localidad, Provincia, CodigoPostal, CoberturaMedicaId (FK), GrupoSanguineo [cifrado], ContactoEmergencia, ObservacionesMedicas [cifrado], FichaMedicaFechaEmision, FichaMedicaFechaVencimiento (calculado = Emision + 1 año), FotoUrl, GrupoFamiliarId (FK, nullable), Estado (Activo/Suspendido/Inactivo), FechaAlta, FechaBaja, MotivoBaja, FechaUltimaModificacion`
+`Id, UsuarioId (FK), NumeroSocio (autogenerado), Apellido, Nombres, DNI (UNIQUE), CUIL, FechaNacimiento, Genero, Nacionalidad, TipoPago, CategoriaId (FK), Telefono, Celular, Email (UNIQUE), Domicilio, Localidad, Provincia, CodigoPostal, CoberturaMedicaId (FK), PlanId (FK Plan, nullable) [NUEVO-SPEC-UI], GrupoSanguineo [cifrado], ContactoEmergencia, ObservacionesMedicas [cifrado], FichaMedicaFechaEmision, FichaMedicaFechaVencimiento (calculado = Emision + 1 año), FotoUrl, GrupoFamiliarId (FK, nullable), Parentesco [NUEVO-SPEC-UI] (Titular/Conyuge/Hijo — solo si GrupoFamiliarId no es null), Modalidad [NUEVO-SPEC-UI] (Cobrador/SecretariaWeb), Estado (Activo/Suspendido/Inactivo), FechaAlta, FechaBaja, MotivoBaja, FechaUltimaModificacion`
 
 **GrupoFamiliar**
-`Id, TitularSocioId (FK Socio, UNIQUE), Estado, Observaciones, FechaCreacion, FechaBaja`
+`Id, NumeroGrupo (autogenerado) [NUEVO-SPEC-UI], Nombre [NUEVO-SPEC-UI], Tipo [NUEVO-SPEC-UI] (Matrimonio/GrupoFamiliar1/GrupoFamiliar2/GrupoFamiliar3 — derivado de cantidad de hijos, persistido para poder filtrar), TitularSocioId (FK Socio, UNIQUE), Estado, Observaciones, MotivoBaja [NUEVO-SPEC-UI], FechaCreacion, FechaBaja`
 
 **Categoria**
 `Id, Nombre, Descripcion, ValorCuota, Estado`
@@ -241,37 +263,60 @@ erDiagram
 **CoberturaMedica**
 `Id, Nombre, Descripcion, Estado`
 
+**Plan** **[NUEVO-SPEC-UI]** (plan específico dentro de una cobertura médica, ej. "OSDE 210")
+`Id, CoberturaMedicaId (FK), Nombre, Estado`
+
 **Instructor** **[NUEVO-SPEC]**
 `Id, UsuarioId (FK), Apellido, Nombres, DNI, Telefono, Email, Especialidad, Estado`
 
 **Actividad**
-`Id, Nombre, Descripcion, CategoriaId (FK), InstructorId (FK, NOT NULL si Estado=Activa — RN RF-ACT-24 bis), CupoMinimo, CupoMaximo, Dias, HorarioInicio, HorarioFin, Duracion, Estado (Activa/Suspendida/Finalizada), ImagenUrl, FechaUltimaModificacion`
+`Id, Nombre, Descripcion, CategoriaId (FK), EspacioId (FK, nullable) [NUEVO-SPEC-UI], Precio [NUEVO-SPEC-UI] (cuota mensual de la actividad, si aplica — ver RN pendiente de facturación en §7.3), ModalidadInscripcion [NUEVO-SPEC-UI] (HorarioFijo/PaseLibre), CupoMinimo, CupoMaximo, Dias, HorarioInicio, HorarioFin, Duracion, Estado (Activa/Suspendida/Finalizada), ImagenUrl, FechaUltimaModificacion`
+~~InstructorId (FK)~~ **[NUEVO-SPEC-UI]** reemplazado por relación N:M — ver `ActividadInstructor` y RN-ACT-02 (§3.17).
+
+**ActividadInstructor** **[NUEVO-SPEC-UI]** (N:M, reemplaza el FK único `Actividad.InstructorId`)
+`ActividadId (FK), InstructorId (FK)`
+
+**DivisionDeportiva** **[NUEVO-SPEC-UI]** (división por edad/género dentro de una Actividad, ej. "Fútbol Infantil Sub13" — distinta de `Categoria`, que es la categoría de socio)
+`Id, ActividadId (FK), Nombre, EdadMinima, EdadMaxima, Genero, Dias, HorarioInicio, HorarioFin, Estado`
+
+**DivisionInstructor** **[NUEVO-SPEC-UI]** (N:M)
+`DivisionDeportivaId (FK), InstructorId (FK)`
 
 **Inscripcion**
-`Id, SocioId (FK), ActividadId (FK), FechaInscripcion, Estado (Activa/Cancelada)`
+`Id, SocioId (FK), ActividadId (FK), DivisionDeportivaId (FK DivisionDeportiva, nullable) [NUEVO-SPEC-UI], FechaInscripcion, Estado (Activa/Cancelada)`
 Constraint: (SocioId, ActividadId) único mientras Estado=Activa.
 
+**Amenity** **[NUEVO-SPEC-UI]** / **EspacioAmenity** **[NUEVO-SPEC-UI]** (N:M, catálogo de comodidades: Parrillero, Climatizado, Vestuarios, Sonido, etc.)
+`Amenity(Id, Nombre)`, `EspacioAmenity(EspacioId, AmenityId)`
+
 **Espacio**
-`Id, Nombre, Descripcion, Ubicacion, Tipo (Salon/CanchaDeportiva/Otro — RF-RES-27), Capacidad, Precio, Estado, ImagenUrl, PoliticaCancelacionHoras [NUEVO-SPEC], PorcentajeReembolso [NUEVO-SPEC]`
+`Id, Nombre, Descripcion, Ubicacion, Tipo (Deportivo/Recreativo/Eventos — RF-RES-27, valores ajustados al diseño de UI, ver §7.3), Capacidad, Precio, UnidadPrecio [NUEVO-SPEC-UI] (PorHora/PorTurno/PorEvento), SolicitarEvaluacion [NUEVO-SPEC-UI] (bool), PermitirNoSocios [NUEVO-SPEC-UI] (bool), Estado, ImagenUrl, PoliticaCancelacionHoras [NUEVO-SPEC], PorcentajeReembolso [NUEVO-SPEC]`
 
 **Reserva**
-`Id, SocioId (FK), EspacioId (FK), Fecha, HoraInicio, HoraFin, Duracion, Estado (PendienteConfirmacion/Confirmada/Rechazada/Pagada/Cancelada), MotivoRechazo, FechaCreacion`
+`Id, SocioId (FK, nullable) [NUEVO-SPEC-UI: nullable para reserva de No Socio gestionada por staff], NombreContacto/TelefonoContacto/EmailContacto [NUEVO-SPEC-UI] (solo si SocioId es null), EspacioId (FK), Fecha, HoraInicio, HoraFin, Duracion, TipoReserva [NUEVO-SPEC-UI] (Partido/Entrenamiento/ReunionDirectiva/Capacitacion/Evento/Otro), CantidadInvitados [NUEVO-SPEC-UI], Observaciones [NUEVO-SPEC-UI], Importe [NUEVO-SPEC-UI], Estado (PendienteConfirmacion/Confirmada/Rechazada/Pagada/Cancelada), MotivoRechazo, FechaCreacion`
 Constraint: no puede existir otra Reserva con Estado en (Confirmada, PendienteConfirmacion) para el mismo (EspacioId, Fecha, Horario) — RF-RES-09 bis.
 
 **Cuota**
-`Id, SocioId (FK, nullable), GrupoFamiliarId (FK, nullable — exactamente uno de los dos no nulo), NumeroCuota, Periodo, FechaVencimiento, Importe, Estado (Pendiente/Pagada/Vencida)`
+`Id, SocioId (FK, nullable), GrupoFamiliarId (FK, nullable — exactamente uno de los dos no nulo), NumeroCuota, Periodo, FechaVencimiento, Importe, RecargoMora [NUEVO-SPEC-UI] (nullable, aplicado por el job de mora), Estado (Pendiente/Pagada/Vencida)`
 
 **Pago**
-`Id, SocioId (FK), CuotaId (FK, nullable), ReservaId (FK, nullable — CHECK: exactamente uno no nulo, RF-FIN-34), Fecha, Importe, MedioPago, Estado, MercadoPagoTransaccionId, ComprobanteUrl`
+`Id, SocioId (FK), CuotaId (FK, nullable), ReservaId (FK, nullable — CHECK: exactamente uno no nulo, RF-FIN-34), Concepto [NUEVO-SPEC-UI], Fecha, Importe, MedioPago, Estado, MercadoPagoTransaccionId, ComprobanteUrl`
+Nota: el pago de varias cuotas en una operación genera múltiples filas de `Pago` — ver RN-FIN-07 (§3.16).
 
 **SolicitudMembresia**
-`Id, UsuarioId (FK, rol No Socio), NumeroSolicitud, Nombre, Apellido, DNI (UNIQUE dentro de solicitudes activas), FechaNacimiento, Email, Telefono, Domicilio, DocumentoIdentidadUrl, FichaMedicaUrl, Estado (Pendiente/Aprobada/Rechazada), MotivoRechazo, FechaSolicitud`
+`Id, UsuarioId (FK, rol No Socio), NumeroSolicitud, Nombre, Apellido, DNI (UNIQUE dentro de solicitudes activas), FechaNacimiento, Genero [NUEVO-SPEC-UI], Email, Telefono, Domicilio, Localidad [NUEVO-SPEC-UI], Provincia [NUEVO-SPEC-UI], CategoriaPretendidaId (FK Categoria, nullable) [NUEVO-SPEC-UI], DocumentoIdentidadUrl, FichaMedicaUrl, Estado (Pendiente/Aprobada/Rechazada), MotivoRechazo, FechaSolicitud`
 
 **Comunicacion**
-`Id, Asunto, Descripcion, ContenidoHtml, TipoComunicacion, Estado, CreadoPorUsuarioId (FK), FechaCreacion, FechaUltimoEnvio`
+`Id, Asunto, Descripcion, ContenidoHtml, TipoComunicacion, Estado, FechaProgramada [NUEVO-SPEC-UI] (nullable, envío diferido), CreadoPorUsuarioId (FK), FechaCreacion, FechaUltimoEnvio`
 
 **ComunicacionDestinatario**
-`Id, ComunicacionId (FK), UsuarioId (FK), Canal (Email/WhatsApp), EstadoEnvio, FechaEnvio, FechaLectura`
+`Id, ComunicacionId (FK), UsuarioId (FK), Canal (Email/WhatsApp/Novedad [NUEVO-SPEC-UI: feed in-app en el Portal del Socio, no es un envío saliente]), EstadoEnvio, FechaEnvio, FechaLectura`
+
+**ComunicacionAdjunto** **[NUEVO-SPEC-UI]** (hasta 5 por comunicación — validación de aplicación)
+`Id, ComunicacionId (FK), ArchivoUrl, NombreArchivo`
+
+**ConsultaSocio** **[NUEVO-SPEC-UI]** (consulta del socio hacia el club — dirección inversa a `Comunicacion`, que es club→socio)
+`Id, SocioId (FK), Area, Asunto, Detalle, AdjuntoUrl (nullable), Estado (Pendiente/Respondida/Cerrada), FechaCreacion, RespondidoPorUsuarioId (FK, nullable), FechaRespuesta`
 
 **RegistroAcceso** **[NUEVO-SPEC]**
 `Id, SocioId (FK), FechaHora, Resultado (Permitido/Denegado), MotivoDenegacion, OperadorUsuarioId (FK)`
@@ -322,6 +367,10 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 - `GET /api/actividades/{id}/inscriptos`
 - `POST /api/actividades/{id}/inscripciones`
 - `DELETE /api/actividades/{id}/inscripciones/{socioId}`
+- `GET /api/actividades/{id}/divisiones` **[NUEVO-SPEC-UI]**
+- `POST /api/actividades/{id}/divisiones` **[NUEVO-SPEC-UI]**
+- `PUT /api/actividades/{id}/divisiones/{divisionId}` **[NUEVO-SPEC-UI]**
+- `PUT /api/actividades/{id}/instructores` **[NUEVO-SPEC-UI]** (reemplaza el conjunto de instructores asignados, N:M)
 
 ### Espacios y Reservas
 - `GET /api/espacios`
@@ -347,12 +396,19 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 - `GET /api/finanzas/reportes/ingresos`
 
 ### Comunicaciones
-- `GET /api/comunicaciones`
+- `GET /api/comunicaciones` (filtro por tab: enviados/borradores/programados)
 - `POST /api/comunicaciones`
 - `PUT /api/comunicaciones/{id}`
 - `DELETE /api/comunicaciones/{id}`
 - `POST /api/comunicaciones/{id}/enviar`
+- `POST /api/comunicaciones/{id}/programar` **[NUEVO-SPEC-UI]** (setea `FechaProgramada`)
+- `POST /api/comunicaciones/{id}/adjuntos` **[NUEVO-SPEC-UI]** (máx. 5 archivos)
 - `GET /api/comunicaciones/{id}/trazabilidad`
+
+### Consultas del Socio **[NUEVO-SPEC-UI]**
+- `GET /api/consultas` (admin/empleado)
+- `PUT /api/consultas/{id}/responder`
+- `GET /api/me/consultas` · `POST /api/me/consultas` (portal del socio)
 
 ### Control de Acceso **[NUEVO-SPEC]**
 - `POST /api/control-acceso/validar` (recibe token QR, devuelve permitido/denegado + motivo)
@@ -366,11 +422,13 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 - `POST /api/solicitudes-membresia/{id}/rechazar`
 
 ### Configuración
-- `GET/PUT /api/configuracion/general`
+- `GET/PUT /api/configuracion/general` (datos institucionales del club — nombre, CUIT, dirección, contacto, horarios de funcionamiento **[NUEVO-SPEC-UI]**)
 - `CRUD /api/configuracion/usuarios`
 - `CRUD /api/configuracion/roles`
 - `CRUD /api/configuracion/coberturas-medicas`
+- `CRUD /api/configuracion/coberturas-medicas/{id}/planes` **[NUEVO-SPEC-UI]**
 - `CRUD /api/configuracion/categorias`
+- `CRUD /api/configuracion/amenities` **[NUEVO-SPEC-UI]**
 
 ### Portal del Socio (`/api/me/*`)
 - `GET /api/me/perfil` · `PUT /api/me/perfil` · `PUT /api/me/password`
@@ -447,3 +505,126 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 - [ ] Reutilización de `/api/me/*` desde app móvil
 - [ ] Notificaciones push
 - [ ] QR del carnet embebido y validable offline con firma
+
+---
+
+## 7. Auditoría de Diseño UI/UX (Figma)
+
+**Fuente:** `Club Union.fig.zip` (archivo nativo de Figma, no legible directamente) → exportado por el equipo de diseño como 139 imágenes PNG/JPG a `diseño-web/`. De esas 139, 33 eran íconos/logos sueltos sin valor de mapeo (se descartan) y **2 no pertenecen a este proyecto** (`Simplification.png`, `image 20.png` — llevan el branding de otro club, "Club Atlético Sur", probablemente material de referencia adjuntado por error). Quedan **100 pantallas reales**, auditadas en 3 bloques temáticos y consolidadas abajo.
+
+### 7.1 Estructura de Vistas (Next.js App Router)
+
+**Backoffice — route group `(dashboard)`** (SuperAdmin / Administrador / Empleado, según matriz §2.2)
+
+| Ruta | Pantalla |
+|---|---|
+| `/dashboard` | Inicio / KPIs generales |
+| `/socios` | Listado de socios |
+| `/socios/nuevo` | Alta de socio |
+| `/socios/[id]` | Detalle de socio |
+| `/socios/[id]/editar` | Edición de socio |
+| `/socios/[id]/actividades` | Actividades e inscripciones del socio |
+| `/socios/[id]/pagos` | Pagos y cuotas del socio |
+| `/grupos-familiares` | Listado de grupos familiares |
+| `/grupos-familiares/nuevo` | Alta de grupo familiar (wizard por pasos) |
+| `/grupos-familiares/[id]/editar` | Edición de grupo familiar |
+| `/actividades` | Listado de actividades |
+| `/actividades/[id]/divisiones` | Divisiones deportivas de una actividad **[NUEVO-SPEC-UI]** |
+| `/instructores` | Listado de instructores |
+| `/espacios` | Listado de espacios |
+| `/espacios/nuevo` · `/espacios/[id]` · `/espacios/[id]/editar` | Alta / detalle / edición de espacio |
+| `/reservas` | Listado de reservas (toggle Lista/Calendario) |
+| `/reservas/nueva` · `/reservas/[id]` · `/reservas/[id]/editar` | Alta / detalle / edición de reserva |
+| `/pagos` | Pagos (vista global, registrar pago manual) |
+| `/finanzas/dashboard` | Dashboard financiero |
+| `/comunicaciones` | Listado (tabs: Enviados / Borradores / Programados) |
+| `/comunicaciones/nueva` · `/comunicaciones/[id]/editar` | Wizard de nuevo mensaje / edición de borrador |
+| `/configuracion/general` | Datos institucionales del club |
+| `/configuracion/usuarios` | Usuarios del sistema |
+| `/configuracion/roles` | Roles y permisos |
+| `/configuracion/coberturas-medicas` | Coberturas médicas y planes |
+
+**Portal del Instructor — route group `(instructor)`**
+
+| Ruta | Pantalla |
+|---|---|
+| `/instructor/actividades` | Mis actividades asignadas |
+| `/instructor/actividades/[id]/inscriptos` | Inscriptos de una actividad propia |
+
+**Portal del Socio — route group `(socio)`, base `/mi-cuenta`**
+
+| Ruta | Pantalla |
+|---|---|
+| `/mi-cuenta` | Inicio / dashboard del socio |
+| `/mi-cuenta/perfil` | Mi perfil |
+| `/mi-cuenta/perfil/carnet` | Carnet digital (QR) |
+| `/mi-cuenta/actividades` | Mis actividades |
+| `/mi-cuenta/actividades/inscribirme` | Inscribirme a una actividad |
+| `/mi-cuenta/pagos` | Estado de cuenta y pagos |
+| `/mi-cuenta/reservas` · `/mi-cuenta/reservas/nueva` | Alquiler de espacios |
+| `/mi-cuenta/comunicaciones` | Consultas al club (`ConsultaSocio`) |
+| `/mi-cuenta/configuracion` | Cambio de contraseña |
+
+**Público / No Socio (sin route group, raíz)**
+
+| Ruta | Pantalla |
+|---|---|
+| `/` | Landing pública |
+| `/login` | Inicio de sesión — un único componente, con branding lateral distinto para staff/instructor vs. socio; el de socio agrega CTA "Solicitar una cuenta" |
+| `/recuperar-password` · `/recuperar-password/confirmar` | Recuperación de contraseña |
+| `/solicitud-membresia` | Formulario de alta de No Socio |
+| `/solicitud-membresia/seguimiento` | Seguimiento de estado de la solicitud |
+
+De las 100 pantallas auditadas, ~35 eran duplicados/iteraciones de diseño de la misma vista (variantes con y sin datos cargados, versiones "anteriores" vs. "final" del mismo mockup) — se consolidaron en una sola ruta cada vez que representaban la misma pantalla en distinto estado.
+
+### 7.2 Componentes UI Reutilizables (Next.js + Tailwind)
+
+**Navegación / shell**
+- `<Sidebar />` — verde institucional, ítems por rol, selector de rol/logout inferior. Presente en todo el backoffice, instructor y portal del socio.
+- `<Header />` — breadcrumb, campana de notificaciones, avatar + nombre de usuario.
+- `<AuthSplitLayout />` — panel de branding CAU a la izquierda + formulario a la derecha, reutilizado en login/recuperar-password/nueva-contraseña.
+
+**Tablas y listados**
+- `<DataTable />` genérica con buscador, filtros dropdown, paginación y columna de acciones — Socios, Grupos Familiares, Actividades, Espacios, Reservas, Instructores, Usuarios, Comunicaciones.
+- `<KpiCardRow />` — fila de tarjetas de resumen (ícono, valor, label, variación %) — Dashboard, Socios, Grupos Familiares, Espacios, Reservas, Finanzas, Comunicaciones, Configuración de usuarios.
+- `<StatusBadge />` — un solo componente parametrizable por dominio: estado de socio (Activo/Suspendido/Inactivo), estado de cuota (Al día/Vence en X días/Moroso), estado de grupo, estado de actividad, estado de reserva, estado de instructor, estado de comunicación, estado de solicitud.
+
+**Modales y drawers**
+- `<ConfirmBajaModal />` — confirmación de baja con motivo obligatorio, reutilizado para Socio y Grupo Familiar.
+- `<StatusDropdown />` — popover de cambio rápido de estado sobre una fila de tabla — Socios, Reservas, Instructores.
+- `<Drawer />` lateral deslizante — alta rápida de Actividad, detalle de Socio, detalle de Reserva.
+- `<EspacioFormModal />` — modal con tabs "Información general"/"Disponibilidad", reutilizado para alta, edición y vista de solo lectura de Espacio.
+
+**Formularios y wizards**
+- `<SocioForm />` — multi-sección (Información básica / Contacto / Datos del socio), reutilizado en alta y edición.
+- `<GrupoFamiliarWizard />` — alta por pasos (Titular → Cónyuge → Hijos) con buscador de socio por N° y validación de identidad.
+- `<ReservaWizard />` — 4 pasos + card de resumen fija, reutilizado en alta y edición.
+- `<ComunicacionWizard />` — 4 pasos (Destinatarios → Asunto → Editor enriquecido → Opciones), con selector de destinatario segmentado (Todos / Grupo o categoría / Socio específico / Novedad).
+- `<RichTextEditor />` — párrafo, negrita, cursiva, listas, alineación, link, imagen — usado en el wizard de Comunicaciones.
+- `<SearchableSelect />` — dropdown con búsqueda y opción inline "+ Agregar nuevo" — Cobertura Médica, selector de socio.
+- `<WeekdaySchedulePicker />` — checkboxes de día + tabla editable de horarios — Divisiones deportivas.
+- `<PasswordChecklistInput />` — cambio de contraseña con checklist de requisitos en tiempo real (refleja RN-LOG-01).
+
+**Específicos de dominio**
+- `<CarnetDigitalCard />` — QR, foto, nombre, DNI, categoría, estado; botones descargar PDF / guardar imagen.
+- `<ActividadCard />` — nombre, profesor(es), horario, ubicación, precio, badge de estado de cuota, acción Inscribirme/Dar de baja.
+- `<EspacioCard />` — categoría, badge de disponibilidad, amenities, precio con unidad, acción Alquilar.
+- `<CuotaChecklistPayment />` — selección múltiple de cuotas pendientes + resumen de pago lateral (ver RN-FIN-07).
+- `<PaymentMethodSelector />` — Mercado Pago / Transferencia (CBU).
+- `<AvatarGroup />` con overflow "+N" — múltiples instructores por actividad.
+- `<ReservationCalendar />` — grid columnas=espacios, filas=horas, bloques de color por reserva, con panel de detalle lateral.
+- `<RolePermissionMatrix />` — matriz Ver/Crear/Editar/Eliminar por módulo, refleja la tabla `RolPermiso`.
+
+### 7.3 Mapeo de Datos UI↔API: Resultado de la Auditoría
+
+**Resuelto directamente en el modelo (§4.2) y en los endpoints (§5):** todos los campos y entidades nuevas listadas ahí (`Plan`, `DivisionDeportiva`, `ActividadInstructor`/`DivisionInstructor`, `Amenity`, `ConsultaSocio`, `ComunicacionAdjunto`, y los campos sueltos como `Socio.Modalidad`, `GrupoFamiliar.Nombre`/`NumeroGrupo`/`Tipo`, `Reserva.Observaciones`/`TipoReserva`/`CantidadInvitados`, `Cuota.RecargoMora`, `Pago.Concepto`, etc.) provienen directamente de esta auditoría visual y ya están incorporados. También se resolvió sin necesidad de campo nuevo: el pago múltiple de cuotas (RN-FIN-07, §3.16) y el reemplazo del instructor único por relación N:M (RN-ACT-02, §3.17).
+
+**Cambio de nomenclatura aplicado (bajo riesgo, no requiere decisión de negocio):** los valores del enum `Espacio.Tipo` se ajustaron de `Salon/CanchaDeportiva/Otro` (RF-RES-27 original) a `Deportivo/Recreativo/Eventos`, que es lo que el diseño realmente implementa.
+
+**Conflictos detectados que SÍ requieren una decisión de producto antes de implementarse** (no se resolvieron unilateralmente):
+
+1. **Cuota de Actividad vs. Cuota Social.** El diseño (`SOCIOS-PAGOS.png`, `Finanzas.png` con "Ingresos por Deporte") muestra actividades con cuota mensual propia, cobrable independientemente de la cuota social del socio. El modelo v3 solo genera `Cuota` desde `Socio`/`GrupoFamiliar`. Se agregó `Actividad.Precio` como dato, pero **falta definir** si la cuota de actividad se emite como una `Cuota` más (requiere que `Cuota` pueda referenciar una `Actividad`, además de `Socio`/`GrupoFamiliar`) o si es un concepto de facturación totalmente aparte.
+2. **Rol "Administrador" con acceso a Configuración.** Varias pantallas de Configuración (Roles y permisos, Usuarios, General) muestran al usuario logueado identificado como "Administrador", pero la matriz §2.2 restringe Configuración General, Gestión de Usuarios y Gestión de Roles exclusivamente a SuperAdministrador. Falta confirmar si es un rótulo genérico del prototipo o si la matriz de permisos debe ampliarse.
+3. **Ingresos sin vínculo a Cuota/Reserva.** El dashboard financiero (`Finanzas.png`) muestra categorías de ingreso como "Jardín", "Eventos" y "Otros ingresos" sin relación aparente con `Cuota` o `Reserva`. RF-FIN-34 exige que todo `Pago` referencie exactamente una de las dos. Falta definir si estos ingresos deben modelarse como un tipo de `Pago` "libre" (sin `CuotaId` ni `ReservaId`) o si en realidad cuelgan de una `Reserva`/`Cuota` ya existente que la UI no está mostrando con claridad.
+
+Estos tres puntos quedan pendientes de definición del club/Product Owner antes de tocar el modelo o los endpoints correspondientes.
