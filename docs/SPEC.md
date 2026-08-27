@@ -165,7 +165,7 @@ RG-06 exige registrar acciones de usuarios "cuando correspondan", sin entidad ni
 
 La ficha médica del socio (RF-SOC-04) incluye cobertura, grupo sanguíneo y observaciones clínicas: son datos sensibles bajo la legislación argentina de protección de datos personales.
 
-- **RN-SEG-01 [NUEVO-SPEC]:** Las columnas de datos médicos se cifran en reposo. En PostgreSQL esto se resuelve con la extensión `pgcrypto` (cifrado a nivel de columna, `pgp_sym_encrypt`/`pgp_sym_decrypt`) o, preferentemente, con cifrado a nivel de aplicación (AES-256 vía .NET `Data Protection API`) antes de persistir el valor — así la clave nunca vive en la base y el cifrado es portable si cambia el proveedor de base de datos. El alta de un socio debe registrar el consentimiento informado para el tratamiento de datos de salud. El acceso de lectura a la ficha médica completa queda restringido a SuperAdmin/Administrador (ver matriz §2.2); el resto de los roles solo ve el semáforo de vigencia.
+- **RN-SEG-01 [NUEVO-SPEC]:** Las columnas de datos médicos se cifran en reposo (`Always Encrypted` en SQL Server o cifrado a nivel de aplicación). El alta de un socio debe registrar el consentimiento informado para el tratamiento de datos de salud. El acceso de lectura a la ficha médica completa queda restringido a SuperAdmin/Administrador (ver matriz §2.2); el resto de los roles solo ve el semáforo de vigencia.
 
 ### 3.13 Unicidad de DNI y correo electrónico
 
@@ -390,7 +390,7 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 ## 6. Plan de Implementación por Fases
 
 ### Etapa 0 — Infraestructura y Autenticación
-- [ ] Proyecto .NET (API) + EF Core + base de datos PostgreSQL (proveedor Npgsql)
+- [ ] Proyecto .NET (API) + EF Core + base de datos SQL Server
 - [ ] Modelo `Usuario`/`Rol`/`Permiso` con RBAC dinámico
 - [ ] Login, recuperación de contraseña, política de contraseñas (RN-LOG-01)
 - [ ] Middleware de autorización por permiso (no solo por rol)
