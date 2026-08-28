@@ -1091,3 +1091,54 @@ export interface RechazarSolicitudInput {
 export interface ActualizarObservacionesSolicitudInput {
   observaciones: string;
 }
+
+// ---------------------------------------------------------------------------
+// Etapa 7 — Reportes operativos por módulo (§5 "Reportes"). El backend real de
+// esta etapa lo construye otro agente en paralelo — no hay entidades de
+// backend verificadas todavía (mismo caso que Etapas 3/4/5/6). Shapes 100%
+// basados en la especificación de la tarea de Etapa 7 + los mismos criterios
+// de contrato de etapas anteriores (relaciones como campo plano, ej.
+// `categoriaNombre` en vez de un objeto `categoria` anidado). Módulo
+// restringido a SuperAdmin/Administrador — el backend responde 403 para
+// cualquier otro rol logueado; cada tab de `/reportes` maneja ese caso de
+// forma independiente, igual que `/finanzas/dashboard` y
+// `/configuracion/general`.
+// ---------------------------------------------------------------------------
+
+/** Fila del desglose por categoría de `GET /api/reportes/socios`. */
+export interface ReporteSociosCategoria {
+  categoriaId: string;
+  categoriaNombre: string;
+  cantidad: number;
+}
+
+/**
+ * `GET /api/reportes/socios`. Reutiliza el mismo nombre de campo que
+ * `FinanzasDashboard.sociosMorosos` (Etapa 3) para el conteo de morosos, en
+ * vez de inventar un nombre nuevo para el mismo concepto de dominio.
+ */
+export interface ReporteSocios {
+  cantidadActivos: number;
+  cantidadSuspendidos: number;
+  cantidadInactivos: number;
+  sociosMorosos: number;
+  porCategoria: ReporteSociosCategoria[];
+}
+
+/** Fila de `GET /api/reportes/actividades`. */
+export interface ReporteActividadItem {
+  actividadId: string;
+  nombre: string;
+  cupoMaximo: number;
+  inscriptosActivos: number;
+  /** 0-100, ya calculado por el backend (`inscriptosActivos / cupoMaximo`). */
+  porcentajeOcupacion: number;
+}
+
+/** Fila de `GET /api/reportes/espacios?desde=&hasta=` (default: mes actual si no se especifica). */
+export interface ReporteEspacioItem {
+  espacioId: string;
+  nombre: string;
+  cantidadReservas: number;
+  importeTotal: number;
+}

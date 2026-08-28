@@ -20,14 +20,18 @@ import {
   ScanLine,
   History,
   ClipboardCheck,
+  BarChart3,
 } from "lucide-react";
 
 // Navegación de Etapa 1 + Etapa 2 parte 1 + Etapa 3 (Finanzas) + Etapa 4
 // (Comunicaciones) + Etapa 5 (Control de Acceso) + Etapa 6 (Solicitudes de
-// Membresía, SPEC.md §7.1, route group `(dashboard)`). Control de Acceso y
-// Solicitudes de Membresía no tenían ruta prevista en §7 (nunca pasaron por
-// la auditoría de Figma) — se agregan acá con el mismo criterio ya usado
-// para Control de Acceso en Etapa 5.
+// Membresía) + Etapa 7 (Reportes, SPEC.md §7.1, route group `(dashboard)`).
+// Control de Acceso, Solicitudes de Membresía y Reportes no tenían ruta
+// prevista en §7 (nunca pasaron por la auditoría de Figma) — se agregan acá
+// con el mismo criterio ya usado para Control de Acceso en Etapa 5. Reportes
+// se ubica al final de la navegación principal (antes de "Configuración"),
+// siguiendo el mismo criterio que Finanzas: es una pantalla de consulta
+// transversal a varios módulos, no un listado de un recurso puntual.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/socios", label: "Socios", icon: Users },
@@ -43,6 +47,7 @@ const NAV_ITEMS = [
   { href: "/comunicaciones", label: "Comunicaciones", icon: Mail },
   { href: "/consultas", label: "Consultas del Socio", icon: MessageCircleQuestion },
   { href: "/solicitudes-membresia", label: "Solicitudes de Membresía", icon: ClipboardCheck },
+  { href: "/reportes", label: "Reportes", icon: BarChart3 },
 ] as const;
 
 const CONFIG_ITEMS = [
