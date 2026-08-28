@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\ProyectoUnion.Application\ProyectoUnion.Application.csproj" />
     <ProjectReference Include="..\..\src\ProyectoUnion.Infrastructure\ProyectoUnion.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ProyectoUnion.Domain\ProyectoUnion.Domain.csproj" />
+    <ProjectReference Include="..\..\src\ProyectoUnion.API\ProyectoUnion.API.csproj" />
   </ItemGroup>
 
 </Project>

@@ -146,7 +146,10 @@ public static class DbSeeder
         ("solicitudes-membresia.leer", "Consulta de solicitudes de membresía.", "SolicitudesMembresia"),
         ("solicitudes-membresia.editar", "Revisión y observaciones sobre una solicitud de membresía (sin aprobar/rechazar).", "SolicitudesMembresia"),
         ("solicitudes-membresia.aprobar", "Aprobación de una solicitud de membresía (da de alta un Socio).", "SolicitudesMembresia"),
-        ("solicitudes-membresia.rechazar", "Rechazo de una solicitud de membresía.", "SolicitudesMembresia")
+        ("solicitudes-membresia.rechazar", "Rechazo de una solicitud de membresía.", "SolicitudesMembresia"),
+
+        // ---- Etapa 7 ----
+        ("reportes.leer", "Reportes operativos por módulo (socios, actividades, espacios).", "Reportes")
     ];
 
     // ---- Etapa 1: RolPermiso — SPEC.md §2.2 ----
@@ -267,6 +270,16 @@ public static class DbSeeder
     private static readonly string[] PermisosSolicitudesMembresiaEmpleadoSecretaria =
     [
         "solicitudes-membresia.leer", "solicitudes-membresia.editar"
+    ];
+
+    // ---- Etapa 7: RolPermiso — SPEC.md §2.2 fila "Reportes generales": SuperAdmin CLMB,
+    // Administrador CL, resto sin acceso. Sin ABM (módulo de solo lectura, 3 endpoints de
+    // agregación), así que "CLMB"/"CL" se traduce al único permiso del módulo. Empleado NO
+    // lo recibe (§2.1 aclara explícitamente que no ve reportes financieros consolidados, y
+    // la matriz marca "—" en esta fila para Empleado).
+    private static readonly string[] PermisosReportes =
+    [
+        "reportes.leer"
     ];
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
@@ -503,6 +516,7 @@ public static class DbSeeder
                 .Concat(PermisosConsultasStaff)
                 .Concat(PermisosControlAccesoStaff)
                 .Concat(PermisosSolicitudesMembresiaCLMBCompleto)
+                .Concat(PermisosReportes)
                 .ToArray()),
             ("Administrador", PermisosCLMBCompleto
                 .Concat(PermisosActividadesEspaciosReservasCLMBCompleto)
@@ -511,6 +525,7 @@ public static class DbSeeder
                 .Concat(PermisosConsultasStaff)
                 .Concat(PermisosControlAccesoStaff)
                 .Concat(PermisosSolicitudesMembresiaCLMBCompleto)
+                .Concat(PermisosReportes)
                 .ToArray()),
             ("EmpleadoSecretaria", PermisosEmpleadoSecretaria
                 .Concat(PermisosEmpleadoSecretariaEtapa2)
