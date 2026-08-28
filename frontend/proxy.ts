@@ -4,11 +4,16 @@ import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
 // Rutas públicas: landing (`/`) y todo lo que cuelga del route group `(auth)`.
 // Los route groups no aparecen en la URL, por eso se listan las rutas reales.
+// `/solicitud-membresia` (el formulario de alta) es pública — el No Socio
+// todavía no tiene cuenta cuando la visita. `/solicitud-membresia/seguimiento`
+// NO se agrega acá a propósito: requiere sesión (ver `SEGUIMIENTO_PATH` más
+// abajo), es la única ruta pública nueva que sí exige estar logueado.
 const PUBLIC_PATHS = new Set<string>([
   "/",
   "/login",
   "/recuperar-password",
   "/recuperar-password/confirmar",
+  "/solicitud-membresia",
 ]);
 
 // Nombre del claim de rol en el JWT — confirmado contra
@@ -24,9 +29,23 @@ const ROL_NOMBRE_CLAIM = "rol_nombre";
 const INSTRUCTOR_PREFIX = "/instructor";
 const SOCIO_PREFIX = "/mi-cuenta";
 
+// `/solicitud-membresia/seguimiento` (Etapa 6, SPEC.md §7.1) no cuelga de
+// ningún route group con prefijo propio (a diferencia de `(instructor)`/
+// `(socio)`) — vive suelta bajo `(auth)`, misma carpeta que `/login`. Se
+// gatea acá con el mismo mecanismo de prefijo que ya usa el resto del
+// archivo, en vez de un chequeo manual en la page: es la opción más
+// consistente con cómo está armado `proxy.ts` (agregar un caso especial a
+// `allowedRolesFor` es trivial, no hace falta un route group nuevo solo para
+// esta ruta). La page igual repite un chequeo liviano de sesión como defensa
+// en profundidad (ver comentario ahí).
+const SEGUIMIENTO_SOLICITUD_PATH = "/solicitud-membresia/seguimiento";
+
 const DASHBOARD_ROLES = ["SuperAdministrador", "Administrador", "EmpleadoSecretaria"];
 const INSTRUCTOR_ROLES = ["Instructor"];
 const SOCIO_ROLES = ["Socio"];
+// Rol sembrado en `backend/.../DbSeeder.cs` (`RolesDelSistema`) como
+// `"NoSocio"` (sin espacio) para el usuario que crea `POST /api/solicitudes-membresia`.
+const NO_SOCIO_ROLES = ["NoSocio"];
 
 const ROLE_HOME: Record<string, string> = {
   SuperAdministrador: "/dashboard",
@@ -34,6 +53,7 @@ const ROLE_HOME: Record<string, string> = {
   EmpleadoSecretaria: "/dashboard",
   Instructor: "/instructor/actividades",
   Socio: "/mi-cuenta/reservas",
+  NoSocio: SEGUIMIENTO_SOLICITUD_PATH,
 };
 
 /**
@@ -74,6 +94,9 @@ function decodeRolFromToken(token: string): string | null {
 }
 
 function allowedRolesFor(pathname: string): string[] {
+  if (pathname === SEGUIMIENTO_SOLICITUD_PATH) {
+    return NO_SOCIO_ROLES;
+  }
   if (pathname === INSTRUCTOR_PREFIX || pathname.startsWith(`${INSTRUCTOR_PREFIX}/`)) {
     return INSTRUCTOR_ROLES;
   }

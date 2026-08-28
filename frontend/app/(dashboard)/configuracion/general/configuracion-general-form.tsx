@@ -40,6 +40,12 @@ const configuracionSchema = z.object({
     .number({ error: "Ingresá la tolerancia en días." })
     .int("Tiene que ser un número entero.")
     .min(0, "No puede ser negativo."),
+  nombreClub: z.string().optional(),
+  cuit: z.string().optional(),
+  direccion: z.string().optional(),
+  telefono: z.string().optional(),
+  emailContacto: z.string().optional(),
+  horariosFuncionamiento: z.string().optional(),
 });
 
 type ConfiguracionFormValues = z.infer<typeof configuracionSchema>;
@@ -72,6 +78,12 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
       tipoTarifaFamiliar: configuracion?.tipoTarifaFamiliar ?? "TarifaPlanaGrupo",
       tarifaPlanaGrupoImporte: configuracion?.tarifaPlanaGrupoImporte ?? undefined,
       toleranciaAccesoDiasCuotaVencida: configuracion?.toleranciaAccesoDiasCuotaVencida ?? 0,
+      nombreClub: configuracion?.nombreClub ?? "",
+      cuit: configuracion?.cuit ?? "",
+      direccion: configuracion?.direccion ?? "",
+      telefono: configuracion?.telefono ?? "",
+      emailContacto: configuracion?.emailContacto ?? "",
+      horariosFuncionamiento: configuracion?.horariosFuncionamiento ?? "",
     },
   });
 
@@ -88,6 +100,12 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
         tipoTarifaFamiliar: values.tipoTarifaFamiliar,
         tarifaPlanaGrupoImporte: esTarifaPlana ? values.tarifaPlanaGrupoImporte : undefined,
         toleranciaAccesoDiasCuotaVencida: values.toleranciaAccesoDiasCuotaVencida,
+        nombreClub: values.nombreClub || undefined,
+        cuit: values.cuit || undefined,
+        direccion: values.direccion || undefined,
+        telefono: values.telefono || undefined,
+        emailContacto: values.emailContacto || undefined,
+        horariosFuncionamiento: values.horariosFuncionamiento || undefined,
       });
 
       if (!result.success) {
@@ -219,6 +237,55 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
             de Acceso todavía permite el ingreso en portería (RN-ACC-02). Superada la tolerancia,
             el escaneo del carnet se deniega con motivo &quot;Cuota vencida&quot; hasta que el
             socio regularice el pago.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* SPEC.md §5 "Configuración": "datos institucionales del club — nombre,
+          CUIT, dirección, contacto, horarios de funcionamiento" — Etapa 6
+          [NUEVO-SPEC-UI]. Misma fila singleton de `ConfiguracionGeneral` que
+          el resto del form (`lib/types.ts`), todos texto libre y opcionales:
+          el SuperAdmin puede dejarlos sin cargar sin que nada se rompa —
+          `app/page.tsx` (landing pública) ya maneja esa ausencia. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Datos institucionales</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="nombreClub">Nombre del club</Label>
+            <Input id="nombreClub" {...register("nombreClub")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cuit">CUIT</Label>
+            <Input id="cuit" {...register("cuit")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="telefono">Teléfono</Label>
+            <Input id="telefono" {...register("telefono")} />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="direccion">Dirección</Label>
+            <Input id="direccion" {...register("direccion")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="emailContacto">Email de contacto</Label>
+            <Input id="emailContacto" type="email" {...register("emailContacto")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="horariosFuncionamiento">Horarios de funcionamiento</Label>
+            <Input id="horariosFuncionamiento" {...register("horariosFuncionamiento")} />
+          </div>
+
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Nombre, dirección, teléfono, email y horarios se muestran en la landing pública
+            (<code>/</code>) vía <code>GET /api/configuracion/publica</code>. El CUIT no se
+            expone públicamente.
           </p>
         </CardContent>
 

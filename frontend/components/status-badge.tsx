@@ -37,6 +37,8 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   // RegistroAcceso.Resultado (Etapa 5)
   Permitido: "default",
   Denegado: "destructive",
+  // SolicitudMembresia.Estado (Etapa 6) — "Pendiente"/"Rechazada" ya cubiertos arriba.
+  Aprobada: "default",
 };
 
 interface StatusBadgeProps {

@@ -704,6 +704,21 @@ export interface ConfiguracionGeneral {
    * Control de Acceso.
    */
   toleranciaAccesoDiasCuotaVencida: number;
+  /**
+   * [NUEVO-SPEC-UI, Etapa 6] Datos institucionales del club (SPEC.md §5
+   * "Configuración": "datos institucionales del club — nombre, CUIT,
+   * dirección, contacto, horarios de funcionamiento"). Se agregan a la misma
+   * fila singleton — mismo criterio que `toleranciaAccesoDiasCuotaVencida`
+   * en Etapa 5. Todos texto simple, todos opcionales (el SuperAdmin puede no
+   * haberlos cargado todavía) — `GET /api/configuracion/publica` (nuevo,
+   * público) expone un subconjunto de estos mismos campos para la landing.
+   */
+  nombreClub?: string | null;
+  cuit?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+  emailContacto?: string | null;
+  horariosFuncionamiento?: string | null;
 }
 
 export interface ConfiguracionGeneralInput {
@@ -711,6 +726,28 @@ export interface ConfiguracionGeneralInput {
   tipoTarifaFamiliar: TipoTarifaFamiliar;
   tarifaPlanaGrupoImporte?: number;
   toleranciaAccesoDiasCuotaVencida: number;
+  nombreClub?: string;
+  cuit?: string;
+  direccion?: string;
+  telefono?: string;
+  emailContacto?: string;
+  horariosFuncionamiento?: string;
+}
+
+/**
+ * `GET /api/configuracion/publica` (§5, **[NUEVO-SPEC-UI, Etapa 6]** — no
+ * está en la lista original de endpoints de §5, se agrega porque la tarea de
+ * Etapa 6 lo pide explícitamente para la landing pública). Sin autenticación
+ * — subconjunto de `ConfiguracionGeneral` sin `cuit` (dato no pensado para
+ * exposición pública) ni los campos financieros/de acceso, que no tiene
+ * sentido exponer sin sesión.
+ */
+export interface ConfiguracionPublica {
+  nombreClub?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+  emailContacto?: string | null;
+  horariosFuncionamiento?: string | null;
 }
 
 /**
@@ -952,4 +989,105 @@ export interface RegistroAcceso {
   motivoDenegacion?: string | null;
   operadorUsuarioId: string;
   operadorEmail: string;
+}
+
+// ---------------------------------------------------------------------------
+// Etapa 6 — Solicitudes de Membresía y Portal Público (SPEC.md línea 332-333
+// "SolicitudMembresia", §5 "Solicitudes de Membresía", §7.1 tabla de rutas
+// públicas). Primera etapa con pantallas SIN sesión (público, No Socio). El
+// backend real de esta etapa lo construye otro agente en paralelo — mismo
+// caso que Etapas 3/4/5: shapes 100% basados en SPEC.md + los mismos
+// criterios de contrato ya validados (campo plano para relaciones, enum
+// string al leer / número al escribir vía `lib/enums.ts` — salvo `Genero`,
+// que Etapa 1 ya estableció que viaja como string también en el body, ver
+// `SocioInput`/`socios/actions.ts`, sin mapa de conversión en `lib/enums.ts`).
+// A reconciliar contra el backend real.
+// ---------------------------------------------------------------------------
+
+export type EstadoSolicitudMembresia = "Pendiente" | "Aprobada" | "Rechazada";
+
+/**
+ * `SolicitudMembresiaResponse` — confirmado contra el backend real.
+ * `categoriaPretendidaNombre` sigue la misma convención de campo plano que
+ * el resto de la app para la relación `CategoriaPretendidaId` (nunca objeto
+ * `categoria` anidado). `observaciones` SÍ existe como columna real
+ * (`SolicitudMembresia.Observaciones`) — la nota de la matriz §2.2 sobre que
+ * Empleado puede "revisar y adjuntar observaciones" tiene dónde vivir.
+ */
+export interface SolicitudMembresia {
+  id: string;
+  usuarioId: string;
+  numeroSolicitud: string;
+  nombre: string;
+  apellido: string;
+  dni: string;
+  fechaNacimiento: string;
+  genero: Genero;
+  email: string;
+  telefono?: string | null;
+  domicilio?: string | null;
+  localidad?: string | null;
+  provincia?: string | null;
+  categoriaPretendidaId?: string | null;
+  categoriaPretendidaNombre?: string | null;
+  documentoIdentidadUrl?: string | null;
+  fichaMedicaUrl?: string | null;
+  estado: EstadoSolicitudMembresia;
+  motivoRechazo?: string | null;
+  fechaSolicitud: string;
+  /** Nota interna de staff (Empleado/Admin/SuperAdmin), separada de `motivoRechazo`. */
+  observaciones?: string | null;
+}
+
+/**
+ * Body de `POST /api/solicitudes-membresia` (público). Incluye `password`:
+ * la solicitud crea de una vez el `Usuario` (rol NoSocio, ver
+ * `backend/.../DbSeeder.cs`) que después permite iniciar sesión y consultar
+ * el seguimiento — no hay un paso de alta de cuenta separado. Misma política
+ * de contraseña que el resto de la app (RN-LOG-01, §3.10: 8+ caracteres,
+ * mayúscula, minúscula, número).
+ */
+export interface SolicitudMembresiaInput {
+  nombre: string;
+  apellido: string;
+  dni: string;
+  fechaNacimiento: string;
+  genero: Genero;
+  email: string;
+  telefono?: string;
+  domicilio?: string;
+  localidad?: string;
+  provincia?: string;
+  categoriaPretendidaId?: string;
+  password: string;
+}
+
+/**
+ * Body de `POST /api/solicitudes-membresia/{id}/rechazar` — confirmado
+ * contra `RechazarSolicitudMembresiaRequest` real: el campo se llama
+ * `motivoRechazo`, no `motivo` (a diferencia de `MotivoInput` que sí usan
+ * baja de Socio/GrupoFamiliar/Reserva).
+ */
+export interface RechazarSolicitudInput {
+  motivoRechazo: string;
+}
+
+/**
+ * `POST /api/solicitudes-membresia/{id}/aprobar` — confirmado contra el
+ * controller real: NO recibe body (`Aprobar(Guid id, CancellationToken)`,
+ * sin `[FromBody]`). La resolución de `CategoriaId` cuando
+ * `CategoriaPretendidaId` es null la hace el backend solo (fallback a la
+ * primera Categoría Activa, `SolicitudMembresiaService.AprobarAsync`) — no
+ * hay forma de que el staff la override desde acá. El endpoint no acepta
+ * ningún parámetro.
+ */
+
+/**
+ * Body de `PUT /api/solicitudes-membresia/{id}` (no `/observaciones` — ese
+ * sub-path no existe, confirmado contra `ActualizarSolicitudMembresiaRequest`
+ * real y la ruta `[HttpPut("{id:guid}")]` de `SolicitudesMembresiaController`).
+ * El campo `observaciones` sí existe en el backend real (`SolicitudMembresia.Observaciones`).
+ */
+export interface ActualizarObservacionesSolicitudInput {
+  observaciones: string;
 }

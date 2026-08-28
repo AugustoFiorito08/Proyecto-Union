@@ -123,6 +123,18 @@ export default function LoginPage() {
             >
               ¿Olvidaste tu contraseña?
             </Link>
+            {/* SPEC.md §7.1: "el de socio agrega CTA 'Solicitar una cuenta'"
+                — un único componente de login sirve a staff/instructor/socio,
+                así que el CTA se muestra siempre en vez de bifurcar el
+                componente por audiencia (no hay forma de saber, antes de
+                loguearse, si quien visita `/login` es un aspirante a socio o
+                un empleado). */}
+            <Link
+              href="/solicitud-membresia"
+              className="text-center text-sm text-muted-foreground hover:underline"
+            >
+              Solicitar una cuenta
+            </Link>
           </CardFooter>
         </form>
       </Card>

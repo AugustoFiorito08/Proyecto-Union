@@ -22,6 +22,7 @@ import type {
   EstadoInstructor,
   EstadoPago,
   EstadoReserva,
+  EstadoSolicitudMembresia,
   MedioPago,
   Modalidad,
   ModalidadInscripcion,
@@ -180,4 +181,16 @@ export const ESTADO_CONSULTA_A_INT: Record<EstadoConsulta, number> = {
   Pendiente: 1,
   Respondida: 2,
   Cerrada: 3,
+};
+
+/**
+ * Mapa de enum Etapa 6 (Solicitudes de Membresía — SPEC.md línea 333, §5).
+ * [SUPUESTO] orden 1..N según aparecen listados en la entidad
+ * (Pendiente/Aprobada/Rechazada) — mismo criterio que el resto de enums de
+ * estado sin backend real todavía para confirmar los valores exactos.
+ */
+export const ESTADO_SOLICITUD_MEMBRESIA_A_INT: Record<EstadoSolicitudMembresia, number> = {
+  Pendiente: 1,
+  Aprobada: 2,
+  Rechazada: 3,
 };
