@@ -548,10 +548,12 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 **Límite conocido, documentado:** la validación cruzada de unicidad de DNI/Email (RN-SOC-02) solo se implementó en `POST /api/solicitudes-membresia` — el alta de Socio por staff (`SociosController.Crear`, Etapa 1) no chequea contra solicitudes pendientes con el mismo DNI. Caso borde de producto poco frecuente (el staff dando de alta manualmente a alguien que en paralelo tiene una solicitud pública pendiente), no bloqueante para el checklist de esta etapa.
 
 ### Etapa 7 — Reportes, QA y Hardening
-- [ ] Módulo de Reportes (pendiente de definición funcional detallada — hueco heredado de v3, sección 11)
+- [x] Módulo de Reportes ✅ (2026-08-29) — alcance definido con el usuario ("reportes operativos por módulo", sin dashboard nuevo ni exportación CSV/Excel/PDF; explícitamente no un RN-REP-XX del SPEC original, era un hueco heredado de v3 sin definición). `GET /api/reportes/{socios,actividades,espacios}` (`reportes.leer`, solo SuperAdmin/Administrador), sin entidades nuevas ni migración — agregaciones de solo lectura sobre datos ya existentes. Verificado en vivo: conteo de Socios por estado/categoría/morosos, ocupación de Actividades (100% con los datos de prueba, 1 inscripto activo / cupo 1), uso de Espacios por rango de fechas. El historial de Control de Acceso (Etapa 5) se reusó tal cual como el reporte de "Accesos" — no se duplicó.
 - [ ] Pruebas de carga sobre generación batch de cuotas y webhook de Mercado Pago
 - [ ] Revisión de seguridad (OWASP Top 10) sobre endpoints públicos (solicitud de membresía, login)
 - [ ] Auditoría de permisos por rol contra la matriz de §2.2
+
+**Nota de reconciliación (Reportes):** encontré y corregí un mismatch de contrato real: el frontend había asumido 3 campos planos (`cantidadActivos`/`cantidadSuspendidos`/`cantidadInactivos`) para el conteo de Socios por estado, pero el backend real agrupa esos 3 valores en un array `porEstado: [{estado, cantidad}]` (siempre con los 3 estados presentes, incluso en 0) — hubiera roto las tarjetas de KPI del tab "Socios" mostrando `undefined`. Los otros dos endpoints (Actividades, Espacios) coincidieron exactamente con lo que el frontend había asumido.
 
 ### Fase 2 — App del Socio (visión, no planificada en detalle)
 - [ ] Reutilización de `/api/me/*` desde app móvil

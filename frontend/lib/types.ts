@@ -1105,6 +1105,14 @@ export interface ActualizarObservacionesSolicitudInput {
 // `/configuracion/general`.
 // ---------------------------------------------------------------------------
 
+/** Fila de "conteo por estado" de `GET /api/reportes/socios` — confirmado contra el backend
+ * real: siempre trae los 3 `EstadoSocio` (Activo/Suspendido/Inactivo), con `cantidad=0` para
+ * el que no tenga socios, en vez de 3 campos planos separados. */
+export interface ReporteSocioPorEstado {
+  estado: SocioEstado;
+  cantidad: number;
+}
+
 /** Fila del desglose por categoría de `GET /api/reportes/socios`. */
 export interface ReporteSociosCategoria {
   categoriaId: string;
@@ -1113,16 +1121,13 @@ export interface ReporteSociosCategoria {
 }
 
 /**
- * `GET /api/reportes/socios`. Reutiliza el mismo nombre de campo que
- * `FinanzasDashboard.sociosMorosos` (Etapa 3) para el conteo de morosos, en
- * vez de inventar un nombre nuevo para el mismo concepto de dominio.
+ * `GET /api/reportes/socios` — confirmado contra `ReporteSociosResponse` real
+ * (`PorEstado`/`PorCategoria`/`SociosMorosos`).
  */
 export interface ReporteSocios {
-  cantidadActivos: number;
-  cantidadSuspendidos: number;
-  cantidadInactivos: number;
-  sociosMorosos: number;
+  porEstado: ReporteSocioPorEstado[];
   porCategoria: ReporteSociosCategoria[];
+  sociosMorosos: number;
 }
 
 /** Fila de `GET /api/reportes/actividades`. */

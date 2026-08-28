@@ -99,8 +99,15 @@ function SociosTab({ result }: { result: FetchResult<ReporteSocios> }) {
   if (result.error) return <ErrorMessage text={result.error} />;
   if (!result.data) return null;
 
-  const { cantidadActivos, cantidadSuspendidos, cantidadInactivos, sociosMorosos, porCategoria } =
-    result.data;
+  const { porEstado, sociosMorosos, porCategoria } = result.data;
+
+  // `porEstado` siempre trae los 3 `EstadoSocio` (confirmado contra el
+  // backend real) — se busca cada uno por nombre en vez de asumir un orden fijo.
+  const cantidadPorEstado = (estado: string) =>
+    porEstado.find((fila) => fila.estado === estado)?.cantidad ?? 0;
+  const cantidadActivos = cantidadPorEstado("Activo");
+  const cantidadSuspendidos = cantidadPorEstado("Suspendido");
+  const cantidadInactivos = cantidadPorEstado("Inactivo");
 
   const items: KpiCardItem[] = [
     { key: "activos", label: "Socios activos", value: String(cantidadActivos), icon: UserCheck },
