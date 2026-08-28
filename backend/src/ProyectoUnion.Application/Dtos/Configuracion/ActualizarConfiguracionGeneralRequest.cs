@@ -4,4 +4,10 @@ public sealed record ActualizarConfiguracionGeneralRequest(
     int MaximaDeudaEnMeses,
     int TipoTarifaFamiliar,
     decimal? TarifaPlanaGrupoImporte,
-    int ToleranciaAccesoDiasCuotaVencida);
+    int ToleranciaAccesoDiasCuotaVencida,
+    string? NombreClub,
+    string? Cuit,
+    string? Direccion,
+    string? Telefono,
+    string? EmailContacto,
+    string? HorariosFuncionamiento);

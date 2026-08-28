@@ -39,4 +39,22 @@ public class ConfiguracionGeneral
     /// bloquee el acceso por QR en portería (RN-ACC-02 paso 3, SPEC.md §3.1, Etapa 5).
     /// </summary>
     public int ToleranciaAccesoDiasCuotaVencida { get; set; } = 10;
+
+    // ---- Etapa 6: datos institucionales del club (SPEC.md §5 "GET/PUT
+    // /api/configuracion/general" — "nombre, CUIT, dirección, contacto, horarios de
+    // funcionamiento"). Expuestos también, sin autenticar, por GET /api/configuracion/publica
+    // (nunca junto a MaximaDeudaEnMeses/ToleranciaAccesoDiasCuotaVencida/etc.) para el
+    // Portal Público y el formulario de Solicitud de Membresía. ----
+
+    public string? NombreClub { get; set; }
+
+    public string? Cuit { get; set; }
+
+    public string? Direccion { get; set; }
+
+    public string? Telefono { get; set; }
+
+    public string? EmailContacto { get; set; }
+
+    public string? HorariosFuncionamiento { get; set; }
 }

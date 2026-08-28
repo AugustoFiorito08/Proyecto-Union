@@ -64,10 +64,35 @@ public class ConfiguracionGeneralController : ControllerBase
             ? request.TarifaPlanaGrupoImporte
             : null;
         configuracion.ToleranciaAccesoDiasCuotaVencida = request.ToleranciaAccesoDiasCuotaVencida;
+        configuracion.NombreClub = request.NombreClub;
+        configuracion.Cuit = request.Cuit;
+        configuracion.Direccion = request.Direccion;
+        configuracion.Telefono = request.Telefono;
+        configuracion.EmailContacto = request.EmailContacto;
+        configuracion.HorariosFuncionamiento = request.HorariosFuncionamiento;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Ok(MapearAResponse(configuracion));
+    }
+
+    /// <summary>
+    /// Datos institucionales del club (SPEC.md §5, Etapa 6), sin autenticar — para el Portal
+    /// Público y el formulario de Solicitud de Membresía. Nunca expone el resto de la
+    /// Configuración General (RN-FIN-02/RN-ACC-02 son reglas internas, no datos públicos).
+    /// </summary>
+    [HttpGet("/api/configuracion/publica")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ConfiguracionPublicaResponse>> ObtenerPublica(CancellationToken cancellationToken)
+    {
+        var configuracion = await ObtenerOCrearAsync(cancellationToken);
+        return Ok(new ConfiguracionPublicaResponse(
+            configuracion.NombreClub,
+            configuracion.Cuit,
+            configuracion.Direccion,
+            configuracion.Telefono,
+            configuracion.EmailContacto,
+            configuracion.HorariosFuncionamiento));
     }
 
     /// <summary>
@@ -100,5 +125,11 @@ public class ConfiguracionGeneralController : ControllerBase
         c.MaximaDeudaEnMeses,
         c.TipoTarifaFamiliar.ToString(),
         c.TarifaPlanaGrupoImporte,
-        c.ToleranciaAccesoDiasCuotaVencida);
+        c.ToleranciaAccesoDiasCuotaVencida,
+        c.NombreClub,
+        c.Cuit,
+        c.Direccion,
+        c.Telefono,
+        c.EmailContacto,
+        c.HorariosFuncionamiento);
 }

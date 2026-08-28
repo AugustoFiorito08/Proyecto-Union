@@ -82,6 +82,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
 
     public DbSet<RegistroAcceso> RegistrosAcceso => Set<RegistroAcceso>();
 
+    public DbSet<SolicitudMembresia> SolicitudesMembresia => Set<SolicitudMembresia>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

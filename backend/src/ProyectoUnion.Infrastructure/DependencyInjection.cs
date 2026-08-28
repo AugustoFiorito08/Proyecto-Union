@@ -17,6 +17,7 @@ using ProyectoUnion.Infrastructure.Pdf;
 using ProyectoUnion.Infrastructure.Persistence;
 using ProyectoUnion.Infrastructure.Persistence.Interceptors;
 using ProyectoUnion.Infrastructure.Qr;
+using ProyectoUnion.Infrastructure.Solicitudes;
 using ProyectoUnion.Infrastructure.Storage;
 
 namespace ProyectoUnion.Infrastructure;
@@ -104,6 +105,9 @@ public static class DependencyInjection
 
         // ---- Etapa 5: Control de Acceso (QR) ----
         services.AddScoped<IControlAccesoService, ControlAccesoService>();
+
+        // ---- Etapa 6: Solicitudes de Membresía y Portal Público ----
+        services.AddScoped<ISolicitudMembresiaService, SolicitudMembresiaService>();
 
         return services;
     }

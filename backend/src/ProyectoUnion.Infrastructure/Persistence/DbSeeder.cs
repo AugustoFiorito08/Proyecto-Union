@@ -140,7 +140,13 @@ public static class DbSeeder
 
         // ---- Etapa 5 ----
         ("control-acceso.validar", "Validación de QR en portería (registra el intento de acceso).", "ControlAcceso"),
-        ("control-acceso.leer", "Consulta del historial de accesos.", "ControlAcceso")
+        ("control-acceso.leer", "Consulta del historial de accesos.", "ControlAcceso"),
+
+        // ---- Etapa 6 ----
+        ("solicitudes-membresia.leer", "Consulta de solicitudes de membresía.", "SolicitudesMembresia"),
+        ("solicitudes-membresia.editar", "Revisión y observaciones sobre una solicitud de membresía (sin aprobar/rechazar).", "SolicitudesMembresia"),
+        ("solicitudes-membresia.aprobar", "Aprobación de una solicitud de membresía (da de alta un Socio).", "SolicitudesMembresia"),
+        ("solicitudes-membresia.rechazar", "Rechazo de una solicitud de membresía.", "SolicitudesMembresia")
     ];
 
     // ---- Etapa 1: RolPermiso — SPEC.md §2.2 ----
@@ -243,6 +249,24 @@ public static class DbSeeder
     private static readonly string[] PermisosControlAccesoStaff =
     [
         "control-acceso.validar", "control-acceso.leer"
+    ];
+
+    // ---- Etapa 6: RolPermiso — SPEC.md §2.2 fila "Solicitudes de Membresía" + nota al pie:
+    // SuperAdmin/Administrador CLMB completo (leer/editar/aprobar/rechazar). Empleado/Secretaría
+    // "CL (revisar, sin aprobar/rechazar)" — de ahí que NO reciba
+    // "solicitudes-membresia.aprobar"/".rechazar", a diferencia de todos los demás módulos de
+    // staff donde SuperAdmin/Administrador/Empleado comparten el mismo set base. Es la única
+    // regla explícita de la matriz que reserva una acción a Administrador+ excluyendo a
+    // Empleado (RN de irreversibilidad/impacto en facturación, nota al pie §2.2).
+    private static readonly string[] PermisosSolicitudesMembresiaCLMBCompleto =
+    [
+        "solicitudes-membresia.leer", "solicitudes-membresia.editar",
+        "solicitudes-membresia.aprobar", "solicitudes-membresia.rechazar"
+    ];
+
+    private static readonly string[] PermisosSolicitudesMembresiaEmpleadoSecretaria =
+    [
+        "solicitudes-membresia.leer", "solicitudes-membresia.editar"
     ];
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
@@ -478,6 +502,7 @@ public static class DbSeeder
                 .Concat(PermisosComunicacionesCLMBCompleto)
                 .Concat(PermisosConsultasStaff)
                 .Concat(PermisosControlAccesoStaff)
+                .Concat(PermisosSolicitudesMembresiaCLMBCompleto)
                 .ToArray()),
             ("Administrador", PermisosCLMBCompleto
                 .Concat(PermisosActividadesEspaciosReservasCLMBCompleto)
@@ -485,6 +510,7 @@ public static class DbSeeder
                 .Concat(PermisosComunicacionesCLMBCompleto)
                 .Concat(PermisosConsultasStaff)
                 .Concat(PermisosControlAccesoStaff)
+                .Concat(PermisosSolicitudesMembresiaCLMBCompleto)
                 .ToArray()),
             ("EmpleadoSecretaria", PermisosEmpleadoSecretaria
                 .Concat(PermisosEmpleadoSecretariaEtapa2)
@@ -492,6 +518,7 @@ public static class DbSeeder
                 .Concat(PermisosComunicacionesEmpleadoSecretaria)
                 .Concat(PermisosConsultasStaff)
                 .Concat(PermisosControlAccesoStaff)
+                .Concat(PermisosSolicitudesMembresiaEmpleadoSecretaria)
                 .ToArray())
         };
 
