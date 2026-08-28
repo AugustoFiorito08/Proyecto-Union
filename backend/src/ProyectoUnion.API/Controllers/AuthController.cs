@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProyectoUnion.Application.Dtos.Auth;
@@ -40,6 +41,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         var usuario = await _userManager.FindByEmailAsync(request.Email);
@@ -48,11 +50,22 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Credenciales inválidas." });
         }
 
+        // Lockout (hardening OWASP Top 10, Etapa 7, RN-LOG-01): no revelar que la cuenta está
+        // bloqueada — mismo mensaje genérico que el resto del método.
+        if (await _userManager.IsLockedOutAsync(usuario))
+        {
+            _logger.LogWarning("Intento de login sobre una cuenta bloqueada por lockout (usuarioId={UsuarioId}).", usuario.Id);
+            return Unauthorized(new { message = "Credenciales inválidas." });
+        }
+
         var passwordValida = await _userManager.CheckPasswordAsync(usuario, request.Password);
         if (!passwordValida)
         {
+            await _userManager.AccessFailedAsync(usuario);
             return Unauthorized(new { message = "Credenciales inválidas." });
         }
+
+        await _userManager.ResetAccessFailedCountAsync(usuario);
 
         var rol = await _roleManager.FindByIdAsync(usuario.RolId.ToString());
         if (rol is null)
@@ -100,6 +113,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         // Mensaje de respuesta idéntico en todos los casos (exista o no el email, falle o no
@@ -139,6 +153,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         var usuario = await _userManager.FindByEmailAsync(request.Email);

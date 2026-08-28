@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -13,6 +14,7 @@ using ProyectoUnion.Infrastructure.Comunicaciones;
 using ProyectoUnion.Infrastructure.Finanzas;
 using ProyectoUnion.Infrastructure.Identity;
 using ProyectoUnion.Infrastructure.Persistence;
+using ProyectoUnion.Infrastructure.RateLimiting;
 
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -47,6 +49,36 @@ builder.Services
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
+
+// ---- Rate limiting (hardening OWASP Top 10, Etapa 7) ----
+var rateLimitingSection = builder.Configuration.GetSection(RateLimitingOptions.SectionName);
+var rateLimitingOptions = rateLimitingSection.Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter("auth", opts =>
+    {
+        opts.PermitLimit = rateLimitingOptions.AuthPermitLimit;
+        opts.Window = TimeSpan.FromMinutes(rateLimitingOptions.AuthWindowMinutes);
+        opts.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("solicitud-membresia-publica", opts =>
+    {
+        opts.PermitLimit = rateLimitingOptions.SolicitudMembresiaPermitLimit;
+        opts.Window = TimeSpan.FromMinutes(rateLimitingOptions.SolicitudMembresiaWindowMinutes);
+        opts.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("webhook-mp", opts =>
+    {
+        opts.PermitLimit = rateLimitingOptions.WebhookMpPermitLimit;
+        opts.Window = TimeSpan.FromMinutes(rateLimitingOptions.WebhookMpWindowMinutes);
+        opts.QueueLimit = 0;
+    });
+});
 
 // ---- Autorización por permiso (no solo por rol) — checklist Etapa 0 ----
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
@@ -134,6 +166,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors(CorsPolicyFrontend);
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

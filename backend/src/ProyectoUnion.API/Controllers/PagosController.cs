@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.Pagos;
@@ -207,14 +208,19 @@ public class PagosController : ControllerBase
 
     /// <summary>
     /// Notificación de Mercado Pago para el evento "payment" (enunciado Etapa 3, punto 4).
-    /// Valida la firma oficial (header x-signature) cuando hay "MercadoPago:WebhookSecret"
-    /// configurado, resuelve el pago real contra la API de MP (para obtener su estado y el
-    /// external_reference con los Guid de Pago propios) y cascadea a Cuota/Reserva. Siempre
-    /// responde 200 salvo firma inválida — MP reintenta agresivamente ante cualquier otro
-    /// código, y estos casos (evento no relevante, MP no configurado) no ameritan reintento.
+    /// Si Mercado Pago está configurado (<see cref="IMercadoPagoClient.EstaConfigurado"/>, basado
+    /// en "MercadoPago:AccessToken"), exige y valida la firma oficial (header x-signature) contra
+    /// "MercadoPago:WebhookSecret" — 500 si el secreto falta (hardening OWASP Top 10, Etapa 7: antes
+    /// el gate de firma dependía solo de si WebhookSecret estaba seteado, permitiendo procesar
+    /// pagos sin validar firma si quedaba vacío en producción). Luego resuelve el pago real contra
+    /// la API de MP (para obtener su estado y el external_reference con los Guid de Pago propios)
+    /// y cascadea a Cuota/Reserva. Siempre responde 200 salvo firma inválida o configuración
+    /// incompleta — MP reintenta agresivamente ante cualquier otro código, y el caso de evento no
+    /// relevante o MP no configurado no amerita reintento.
     /// </summary>
     [HttpPost("mercadopago/webhook")]
     [AllowAnonymous]
+    [EnableRateLimiting("webhook-mp")]
     public async Task<IActionResult> Webhook(CancellationToken cancellationToken)
     {
         Request.EnableBuffering();
@@ -241,23 +247,31 @@ public class PagosController : ControllerBase
             return Ok(); // Otros tipos de evento no nos interesan (RF-FIN, Etapa 3).
         }
 
-        var secreto = _configuration["MercadoPago:WebhookSecret"];
-        if (!string.IsNullOrWhiteSpace(secreto))
-        {
-            var xSignature = Request.Headers["x-signature"].ToString();
-            var xRequestId = Request.Headers["x-request-id"].ToString();
-
-            if (!MercadoPagoSignatureValidator.Validar(xSignature, xRequestId, notificacion.Data.Id, secreto))
-            {
-                _logger.LogWarning("Webhook de Mercado Pago con firma inválida (data.id={DataId}).", notificacion.Data.Id);
-                return Unauthorized(new { message = "Firma de webhook inválida." });
-            }
-        }
-
         if (!_mercadoPagoClient.EstaConfigurado)
         {
             _logger.LogWarning("Se recibió un webhook de Mercado Pago pero MercadoPago:AccessToken no está configurado en este entorno.");
             return Ok();
+        }
+
+        // El gate de firma debe depender del mismo "MP configurado" que EstaConfigurado (chequeado
+        // arriba, basado en AccessToken) — no de si WebhookSecret está seteado por separado. Si
+        // AccessToken está configurado mientras WebhookSecret quedó vacío, procesar el webhook sin
+        // validar firma sería aceptar pagos no autenticados (bug de seguridad real detectado en
+        // hardening OWASP Top 10, Etapa 7).
+        var secreto = _configuration["MercadoPago:WebhookSecret"];
+        if (string.IsNullOrWhiteSpace(secreto))
+        {
+            _logger.LogError("Mercado Pago está configurado (AccessToken presente) pero MercadoPago:WebhookSecret está vacío; no se puede validar la firma del webhook.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Configuración de Mercado Pago incompleta." });
+        }
+
+        var xSignature = Request.Headers["x-signature"].ToString();
+        var xRequestId = Request.Headers["x-request-id"].ToString();
+
+        if (!MercadoPagoSignatureValidator.Validar(xSignature, xRequestId, notificacion.Data.Id, secreto))
+        {
+            _logger.LogWarning("Webhook de Mercado Pago con firma inválida (data.id={DataId}).", notificacion.Data.Id);
+            return Unauthorized(new { message = "Firma de webhook inválida." });
         }
 
         var (status, externalReference) = await _mercadoPagoClient.ObtenerPagoAsync(notificacion.Data.Id, cancellationToken);

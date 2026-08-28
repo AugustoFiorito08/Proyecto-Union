@@ -17,6 +17,7 @@ using ProyectoUnion.Infrastructure.Pdf;
 using ProyectoUnion.Infrastructure.Persistence;
 using ProyectoUnion.Infrastructure.Persistence.Interceptors;
 using ProyectoUnion.Infrastructure.Qr;
+using ProyectoUnion.Infrastructure.RateLimiting;
 using ProyectoUnion.Infrastructure.Solicitudes;
 using ProyectoUnion.Infrastructure.Storage;
 
@@ -52,6 +53,14 @@ public static class DependencyInjection
                 options.Password.RequireNonAlphanumeric = false;
 
                 options.User.RequireUniqueEmail = true; // RN-SOC-02, SPEC.md §3.13
+
+                // Lockout de cuenta tras intentos fallidos de login (hardening OWASP Top 10,
+                // Etapa 7, RN-LOG-01/RN-SEG): 5 intentos fallidos bloquean la cuenta 15 minutos.
+                // Instrumentado manualmente en AuthController.Login (IsLockedOutAsync/
+                // AccessFailedAsync/ResetAccessFailedCountAsync) porque este proyecto usa
+                // AddIdentityCore + UserManager directo, sin SignInManager.
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -59,6 +68,8 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+        services.Configure<RateLimitingOptions>(configuration.GetSection(RateLimitingOptions.SectionName));
 
         services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
         services.AddSingleton<IAmazonS3>(serviceProvider =>

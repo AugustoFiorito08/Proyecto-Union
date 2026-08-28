@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using ProyectoUnion.Application.Common;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.SolicitudesMembresia;
 using ProyectoUnion.Application.Interfaces;
@@ -47,6 +49,7 @@ public class SolicitudesMembresiaController : ControllerBase
     /// <summary>Alta pública de una Solicitud de Membresía (SPEC.md §5, RF-SOL-01 a RF-SOL-04).</summary>
     [HttpPost]
     [AllowAnonymous]
+    [EnableRateLimiting("solicitud-membresia-publica")]
     public async Task<ActionResult<SolicitudMembresiaResponse>> Crear(
         [FromBody] CrearSolicitudMembresiaRequest request, CancellationToken cancellationToken)
     {
@@ -71,6 +74,7 @@ public class SolicitudesMembresiaController : ControllerBase
     [HttpPost("{id:guid}/adjuntos")]
     [AllowAnonymous]
     [RequestSizeLimit(MaxTamanioAdjuntos)]
+    [EnableRateLimiting("solicitud-membresia-publica")]
     public async Task<ActionResult<AdjuntosSolicitudMembresiaResponse>> SubirAdjuntos(
         Guid id,
         [FromForm] IFormFile? documentoIdentidad,
@@ -91,6 +95,20 @@ public class SolicitudesMembresiaController : ControllerBase
         if (documentoIdentidad is null && fichaMedica is null)
         {
             return BadRequest(new { message = "Debe adjuntar al menos un archivo (documentoIdentidad y/o fichaMedica)." });
+        }
+
+        // Validación de tipo/tamaño (hardening OWASP Top 10, Etapa 7) ANTES de subir cualquiera de
+        // los dos archivos — todo o nada: si uno es inválido, no se sube el otro.
+        if (documentoIdentidad is not null &&
+            !ArchivoAdjuntoValidator.EsValido(documentoIdentidad.FileName, documentoIdentidad.ContentType, documentoIdentidad.Length, out var errorDocumentoIdentidad))
+        {
+            return BadRequest(new { message = errorDocumentoIdentidad });
+        }
+
+        if (fichaMedica is not null &&
+            !ArchivoAdjuntoValidator.EsValido(fichaMedica.FileName, fichaMedica.ContentType, fichaMedica.Length, out var errorFichaMedica))
+        {
+            return BadRequest(new { message = errorFichaMedica });
         }
 
         if (documentoIdentidad is not null)

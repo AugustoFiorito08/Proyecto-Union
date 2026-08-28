@@ -58,6 +58,14 @@ docker compose down -v
 
 Mercado Pago (pagos), el envío de Email (SMTP) y WhatsApp Business están implementados pero **sin credenciales configuradas** en `docker-compose.yml` — es un entorno de desarrollo local, no un ambiente con proveedores reales contratados. Sin esas credenciales, esas funciones responden con un error claro en vez de fallar en silencio (ver el detalle en `SPEC.md`, Etapas 3 y 4). Para probarlas de verdad, hay que completar las variables de entorno correspondientes en `docker-compose.yml` (`MercadoPago__*`, `Email__Smtp__*`, `WhatsApp__*`) con credenciales propias.
 
+## Límites de seguridad conocidos (fuera de alcance por decisión explícita)
+
+La revisión de seguridad OWASP Top 10 de la Etapa 7 (detalle completo en `SPEC.md` §6) implementó rate limiting, lockout de login, validación de adjuntos, firma obligatoria del webhook de Mercado Pago y actualización de dependencias vulnerables. Quedaron fuera, documentados como checklist de un futuro despliegue de producción (son gaps de configuración de entorno, no de código):
+
+- El secreto JWT vive hardcodeado en `appsettings.Development.json` — es un valor de desarrollo (el propio archivo dice "CAMBIAR EN PRODUCCIÓN"). En producción debe venir de un secret manager o variable de entorno, nunca committeado.
+- CORS (`Program.cs`) tiene los orígenes hardcodeados a `http://localhost:3000`/`3001` — no hay todavía un entorno de producción para el que definir el origen real.
+- No hay security headers configurados (HSTS, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
+
 ## Estado del proyecto
 
 Etapas 0 a 6 del plan de implementación completas y verificadas en vivo (infraestructura/autenticación, Socios, Actividades/Reservas, Finanzas, Comunicaciones, Control de Acceso, Solicitudes de Membresía). El detalle etapa por etapa, con qué se verificó y qué quedó como límite conocido, está en `SPEC.md` §6.

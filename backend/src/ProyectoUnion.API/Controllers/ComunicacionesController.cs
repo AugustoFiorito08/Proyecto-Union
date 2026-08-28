@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ProyectoUnion.Application.Common;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.Comunicaciones;
 using ProyectoUnion.Application.Interfaces;
@@ -20,6 +21,7 @@ namespace ProyectoUnion.API.Controllers;
 public class ComunicacionesController : ControllerBase
 {
     private const int MaxAdjuntosPorComunicacion = 5;
+    private const int MaxTamanioAdjuntos = 20_000_000;
 
     // PNG transparente de 1x1 (RN de tracking de lectura, NUEVO-SPEC-UI) — se sirve siempre,
     // nunca 404, para no delatar al remitente si el pixel fue bloqueado por el cliente.
@@ -158,7 +160,7 @@ public class ComunicacionesController : ControllerBase
     /// <summary>Hasta 5 adjuntos por comunicación (SPEC.md §4.2 "ComunicacionAdjunto", validado acá).</summary>
     [HttpPost("{id:guid}/adjuntos")]
     [Authorize(Policy = "comunicaciones.editar")]
-    [RequestSizeLimit(20_000_000)]
+    [RequestSizeLimit(MaxTamanioAdjuntos)]
     public async Task<ActionResult<IReadOnlyList<ComunicacionAdjuntoResponse>>> SubirAdjuntos(Guid id, [FromForm] IFormFileCollection archivos, CancellationToken cancellationToken)
     {
         var comunicacion = await _dbContext.Comunicaciones
@@ -183,6 +185,16 @@ public class ComunicacionesController : ControllerBase
         if (comunicacion.Adjuntos.Count + archivos.Count > MaxAdjuntosPorComunicacion)
         {
             return BadRequest(new { message = $"Una comunicación admite hasta {MaxAdjuntosPorComunicacion} adjuntos." });
+        }
+
+        // Validación de tipo/tamaño (hardening OWASP Top 10, Etapa 7) — corta en el primer
+        // archivo inválido, antes de subir ninguno.
+        foreach (var archivoAValidar in archivos)
+        {
+            if (!ArchivoAdjuntoValidator.EsValido(archivoAValidar.FileName, archivoAValidar.ContentType, archivoAValidar.Length, out var error))
+            {
+                return BadRequest(new { message = error });
+            }
         }
 
         var nuevos = new List<ComunicacionAdjunto>();
