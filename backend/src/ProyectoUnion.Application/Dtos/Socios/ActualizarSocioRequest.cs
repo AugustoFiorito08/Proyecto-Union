@@ -1,0 +1,27 @@
+namespace ProyectoUnion.Application.Dtos.Socios;
+
+public sealed record ActualizarSocioRequest(
+    string Apellido,
+    string Nombres,
+    string? CUIL,
+    DateTime FechaNacimiento,
+    string? Genero,
+    string? Nacionalidad,
+    int TipoPago,
+    Guid CategoriaId,
+    string? Telefono,
+    string? Celular,
+    string Email,
+    string? Domicilio,
+    string? Localidad,
+    string? Provincia,
+    string? CodigoPostal,
+    Guid? CoberturaMedicaId,
+    Guid? PlanId,
+    string? GrupoSanguineo,
+    string? ContactoEmergencia,
+    string? ObservacionesMedicas,
+    DateTime? FichaMedicaFechaEmision,
+    bool ConsentimientoDatosSalud,
+    string? FotoUrl,
+    int Modalidad);

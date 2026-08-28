@@ -1,0 +1,28 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.swp
+
+# EF Core
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+.env*.local
+
+# Docker
+minio-data/
+postgres-data/

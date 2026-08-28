@@ -1,0 +1,35 @@
+import { Badge } from "@/components/ui/badge";
+
+// `<StatusBadge />` genérico (SPEC.md §7.2): un componente parametrizable
+// para cualquier estado de dominio (Socio, GrupoFamiliar, Categoria,
+// CoberturaMedica, Actividad, DivisionDeportiva, Instructor, Espacio,
+// Reserva, ...). Se extiende con más mapeos a medida que se agregan módulos.
+const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  Activo: "default",
+  Suspendido: "destructive",
+  Inactivo: "secondary",
+  Vigente: "default",
+  ProximaAVencer: "secondary",
+  Vencida: "destructive",
+  // Actividad / DivisionDeportiva
+  Activa: "default",
+  Suspendida: "destructive",
+  Finalizada: "secondary",
+  // Reserva
+  PendienteConfirmacion: "secondary",
+  Confirmada: "default",
+  Rechazada: "destructive",
+  Pagada: "default",
+  Cancelada: "outline",
+  // Cuota / Pago (Etapa 3, SPEC.md §4.2) — "Pagada"/"Vencida"/"Rechazada" ya cubiertos arriba.
+  Pendiente: "secondary",
+  PendienteReembolso: "outline",
+};
+
+interface StatusBadgeProps {
+  status: string;
+}
+
+export function StatusBadge({ status }: StatusBadgeProps) {
+  return <Badge variant={STATUS_VARIANTS[status] ?? "outline"}>{status}</Badge>;
+}

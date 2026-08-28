@@ -3,7 +3,7 @@
 **Versión:** 4.0 (Especificación Técnica Consolidada)
 **Basado en:** `CAU_Requerimientos_Funcionales_v3.pdf`
 **Fecha:** 2026-08-27
-**Convención de trazabilidad:** los requerimientos heredados del documento v3 conservan su ID original (`RF-XXX-NN`). Los requerimientos y reglas de negocio nuevos, producto de la auditoría contra el PDF v3, se marcan como **[NUEVO-SPEC]**. Los campos, entidades y reglas detectados en la auditoría visual del diseño de Figma (§7) se marcan como **[NUEVO-SPEC-UI]**.
+**Convención de trazabilidad:** los requerimientos heredados del documento v3 conservan su ID original (`RF-XXX-NN`). Los requerimientos y reglas de negocio nuevos, producto de la auditoría contra el PDF v3, se marcan como **[NUEVO-SPEC]**. Los campos, entidades y reglas detectados en la auditoría visual del diseño de Figma (§7) se marcan como **[NUEVO-SPEC-UI]**. Los campos detectados como faltantes recién al implementar Etapa 1 (no cubiertos por ninguna auditoría previa) se marcan como **[NUEVO-SPEC-IMPL]**.
 
 ---
 
@@ -75,7 +75,7 @@ Convención: **C**=Crear · **L**=Leer · **M**=Modificar · **B**=Baja lógica 
 | Solicitudes de Membresía | CLMB | CLMB | CL (revisar, sin aprobar/rechazar\*) | — | — | Propio (C/L) |
 | Reportes generales | CLMB | CL | — | — | — | — |
 | Configuración General | CLMB | — | — | — | — | — |
-| Gestión de Usuarios Admin | CLMB | — | — | — | — | — |
+| Gestión de Usuarios Admin | CLMB | CLMB (solo jerarquía inferior — RN-ADM-01, §3.19) | — | — | — | — |
 | Gestión de Roles/Permisos | CLMB | — | — | — | — | — |
 | Coberturas Médicas / Categorías | CLMB | CLMB | L | — | — | — |
 
@@ -198,6 +198,24 @@ El diseño (`ACTIVIDADES.png`, `Categorias deportes.png`) muestra dos cosas que 
 - **RN-ACT-02 [NUEVO-SPEC-UI]:** Se reemplaza el FK único `Actividad.InstructorId` por una relación N:M (`ActividadInstructor`). Se introduce la entidad `DivisionDeportiva` para modelar las divisiones edad/género dentro de una Actividad, cada una con sus propios instructores (`DivisionInstructor`, N:M). La regla heredada RF-ACT-24 bis ("instructor obligatorio si Estado=Activa") se reinterpreta como: debe existir al menos un registro en `DivisionInstructor` (si la Actividad tiene divisiones) o en `ActividadInstructor` (si no las tiene) antes de poder activarla.
 - La inscripción de un socio (`Inscripcion`) pasa a poder referenciar una `DivisionDeportiva` puntual además de la `Actividad` — ver cambios en §4.2.
 
+### 3.18 [NUEVO-SPEC-UI] Facturación de la cuota de actividad (no es un cobro independiente)
+
+Aclaración de producto: la cuota deportiva **no es un registro cobrable aparte**. El monto mensual que paga un socio es un único total que surge de sumar su cuota societaria base más el precio de cada actividad en la que esté inscripto.
+
+- **RN-FIN-08 [NUEVO-SPEC-UI]:** al generar la `Cuota` de un período (`POST /api/cuotas/generar-periodo`), el motor de facturación calcula `Importe` = cuota societaria base (`Categoria.ValorCuota` del socio, o la tarifa familiar según RN-FIN-03 si la `Cuota` es de `GrupoFamiliar`) **+** Σ `Actividad.Precio` de cada `Inscripcion` en estado `Activa` a la fecha de generación (de todos los integrantes, si es cuota familiar). Cada componente se persiste como un registro de `CuotaDetalle` (ver §4.2) solo para trazabilidad/desglose en el comprobante — la línea de actividad no tiene `Estado` ni `Pago` propios, vive subordinada a la `Cuota` consolidada. Consistente con RN-FIN-04, los `CuotaDetalle` de una `Cuota` ya generada no se recalculan retroactivamente si después cambia `Actividad.Precio` o el socio cancela la inscripción — el ajuste impacta recién en el próximo período.
+
+### 3.19 [NUEVO-SPEC-UI] Jerarquía de roles para la gestión de usuarios
+
+Aclaración de producto que corrige un conflicto detectado en §7.3: el diseño muestra al rol Administrador gestionando usuarios del sistema, mientras que la matriz original (§2.2) restringía "Gestión de Usuarios Admin" solo a SuperAdmin. Definición final: SuperAdmin conserva el acceso exclusivo a Roles y Configuración General; Administrador **sí** hace ABM de usuarios, pero únicamente de jerarquía inferior a la suya.
+
+- **RN-ADM-01 [NUEVO-SPEC-UI]:** se agrega `Rol.NivelJerarquico` (entero; menor valor = mayor jerarquía): `SuperAdministrador=1`, `Administrador=2`, `Empleado/Secretaría=3`, `Instructor=3`, `Socio=4`. Un usuario autenticado con rol de nivel N solo puede crear/editar/dar de baja usuarios cuyo `Rol.NivelJerarquico` sea **estrictamente mayor** a N. Así, Administrador (nivel 2) gestiona Empleado, Instructor y Socio, pero no a otros Administradores ni a SuperAdmin; SuperAdmin (nivel 1) gestiona todos los roles. La validación corre en el middleware de autorización, comparando el nivel del usuario autenticado contra el del usuario objetivo antes de permitir `POST/PUT/DELETE` en `/api/configuracion/usuarios/{id}`.
+
+### 3.20 [NUEVO-SPEC-UI] Ingresos libres, sin Cuota ni Reserva asociada
+
+El dashboard financiero del diseño (`Finanzas.png`) muestra categorías de ingreso ("Jardín", "Eventos", "Otros ingresos") que no corresponden a una cuota social ni a la reserva de un espacio del catálogo, pero RF-FIN-34 exigía que todo `Pago` referenciara exactamente una de las dos. Decisión de producto: se extiende `Pago` con un tercer origen posible en lugar de modelar un módulo contable aparte o forzar estos ingresos dentro de `Cuota`/`Reserva`.
+
+- **RN-FIN-09 [NUEVO-SPEC-UI]:** se agrega la entidad catálogo `ConceptoIngresoLibre` (Id, Nombre, Estado) y el campo `Pago.ConceptoIngresoLibreId` (FK, nullable). RF-FIN-34 se actualiza: el CHECK de `Pago` pasa de "exactamente uno de `CuotaId`/`ReservaId` no nulo" a **"exactamente uno de `CuotaId`/`ReservaId`/`ConceptoIngresoLibreId` no nulo"**. El dashboard financiero y los reportes de ingresos (`GET /api/finanzas/dashboard`, `GET /api/finanzas/reportes/ingresos`) agrupan por el mismo `Pago`, sin necesidad de una fuente de datos paralela. El catálogo lo administra SuperAdmin/Administrador desde Configuración, permitiendo agregar categorías de ingreso nuevas sin deploy.
+
 ---
 
 ## 4. Modelo de Datos
@@ -232,8 +250,10 @@ erDiagram
 
     Socio ||--o{ Cuota : "genera (individual)"
     GrupoFamiliar ||--o{ Cuota : "genera (familiar)"
+    Cuota ||--o{ CuotaDetalle : desglosa
     Cuota ||--o| Pago : "cancelada por"
     Reserva ||--o| Pago : "cancelada por"
+    ConceptoIngresoLibre ||--o{ Pago : origina
 
     Socio ||--o{ RegistroAcceso : registra
     Socio ||--o{ ConsultaSocio : envía
@@ -249,10 +269,10 @@ erDiagram
 `Id, NombreUsuario, Email, PasswordHash, RolId (FK Rol), Estado, RecordarSesionToken, FechaCreacion, FechaUltimoAcceso`
 
 **Rol** / **Permiso** / **RolPermiso** (RBAC dinámico, RF-CONF-08/09)
-`Rol(Id, Nombre, Descripcion [NUEVO-SPEC-UI], Estado [NUEVO-SPEC-UI], EsRolDeSistema)`, `Permiso(Id, Codigo, Descripcion, Modulo)`, `RolPermiso(RolId, PermisoId)`
+`Rol(Id, Nombre, Descripcion [NUEVO-SPEC-UI], Estado [NUEVO-SPEC-UI], NivelJerarquico [NUEVO-SPEC-UI] (entero, menor = mayor jerarquía — ver RN-ADM-01 §3.19), EsRolDeSistema)`, `Permiso(Id, Codigo, Descripcion, Modulo)`, `RolPermiso(RolId, PermisoId)`
 
 **Socio**
-`Id, UsuarioId (FK), NumeroSocio (autogenerado), Apellido, Nombres, DNI (UNIQUE), CUIL, FechaNacimiento, Genero, Nacionalidad, TipoPago, CategoriaId (FK), Telefono, Celular, Email (UNIQUE), Domicilio, Localidad, Provincia, CodigoPostal, CoberturaMedicaId (FK), PlanId (FK Plan, nullable) [NUEVO-SPEC-UI], GrupoSanguineo [cifrado], ContactoEmergencia, ObservacionesMedicas [cifrado], FichaMedicaFechaEmision, FichaMedicaFechaVencimiento (calculado = Emision + 1 año), FotoUrl, GrupoFamiliarId (FK, nullable), Parentesco [NUEVO-SPEC-UI] (Titular/Conyuge/Hijo — solo si GrupoFamiliarId no es null), Modalidad [NUEVO-SPEC-UI] (Cobrador/SecretariaWeb), Estado (Activo/Suspendido/Inactivo), FechaAlta, FechaBaja, MotivoBaja, FechaUltimaModificacion`
+`Id, UsuarioId (FK, nullable [NUEVO-SPEC-IMPL]: el alta de Socio en Etapa 1 no crea necesariamente una cuenta de login — eso es del Portal del Socio, etapas posteriores), NumeroSocio (autogenerado), Apellido, Nombres, DNI (UNIQUE), CUIL, FechaNacimiento, Genero, Nacionalidad, TipoPago, CategoriaId (FK), Telefono, Celular, Email (UNIQUE), Domicilio, Localidad, Provincia, CodigoPostal, CoberturaMedicaId (FK, nullable), PlanId (FK Plan, nullable) [NUEVO-SPEC-UI], GrupoSanguineo [cifrado], ContactoEmergencia, ObservacionesMedicas [cifrado], FichaMedicaFechaEmision, FichaMedicaFechaVencimiento (calculado = Emision + 1 año), FotoUrl, GrupoFamiliarId (FK, nullable), Parentesco [NUEVO-SPEC-UI] (Titular/Conyuge/Hijo — solo si GrupoFamiliarId no es null), Modalidad [NUEVO-SPEC-UI] (Cobrador/SecretariaWeb), Estado (Activo/Suspendido/Inactivo), FechaAlta, FechaBaja, MotivoBaja, FechaUltimaModificacion, CodigoQr [NUEVO-SPEC-IMPL] (string aleatorio opaco, único e inmutable — identificador del QR del carnet, RN-ACC-05), ConsentimientoDatosSaludFecha [NUEVO-SPEC-IMPL] (DateTime nullable — consentimiento informado para tratamiento de datos de salud, RN-SEG-01)`
 
 **GrupoFamiliar**
 `Id, NumeroGrupo (autogenerado) [NUEVO-SPEC-UI], Nombre [NUEVO-SPEC-UI], Tipo [NUEVO-SPEC-UI] (Matrimonio/GrupoFamiliar1/GrupoFamiliar2/GrupoFamiliar3 — derivado de cantidad de hijos, persistido para poder filtrar), TitularSocioId (FK Socio, UNIQUE), Estado, Observaciones, MotivoBaja [NUEVO-SPEC-UI], FechaCreacion, FechaBaja`
@@ -297,11 +317,17 @@ Constraint: (SocioId, ActividadId) único mientras Estado=Activa.
 Constraint: no puede existir otra Reserva con Estado en (Confirmada, PendienteConfirmacion) para el mismo (EspacioId, Fecha, Horario) — RF-RES-09 bis.
 
 **Cuota**
-`Id, SocioId (FK, nullable), GrupoFamiliarId (FK, nullable — exactamente uno de los dos no nulo), NumeroCuota, Periodo, FechaVencimiento, Importe, RecargoMora [NUEVO-SPEC-UI] (nullable, aplicado por el job de mora), Estado (Pendiente/Pagada/Vencida)`
+`Id, SocioId (FK, nullable), GrupoFamiliarId (FK, nullable — exactamente uno de los dos no nulo), NumeroCuota, Periodo, FechaVencimiento, Importe (calculado, ver RN-FIN-08 §3.18), RecargoMora [NUEVO-SPEC-UI] (nullable, aplicado por el job de mora), Estado (Pendiente/Pagada/Vencida)`
+
+**CuotaDetalle** **[NUEVO-SPEC-UI]** (desglose informativo del `Importe` de una `Cuota` — no es cobrable de forma independiente, no tiene `Estado` ni `Pago` propios; se congela al generarse, RN-FIN-08)
+`Id, CuotaId (FK), Concepto (ej. "Cuota societaria", "Actividad: Natación"), ActividadId (FK, nullable — null si es el componente societario base), SocioId (FK, nullable — identifica qué integrante generó el cargo, relevante en cuotas familiares), Importe`
 
 **Pago**
-`Id, SocioId (FK), CuotaId (FK, nullable), ReservaId (FK, nullable — CHECK: exactamente uno no nulo, RF-FIN-34), Concepto [NUEVO-SPEC-UI], Fecha, Importe, MedioPago, Estado, MercadoPagoTransaccionId, ComprobanteUrl`
+`Id, SocioId (FK, nullable [NUEVO-SPEC-UI]: nulo si el origen es ConceptoIngresoLibre sin socio identificado), CuotaId (FK, nullable), ReservaId (FK, nullable), ConceptoIngresoLibreId (FK, nullable) [NUEVO-SPEC-UI] — CHECK: exactamente uno de los tres no nulo, RF-FIN-34 (actualizado por RN-FIN-09 §3.20), Concepto [NUEVO-SPEC-UI], Fecha, Importe, MedioPago, Estado, MercadoPagoTransaccionId, ComprobanteUrl`
 Nota: el pago de varias cuotas en una operación genera múltiples filas de `Pago` — ver RN-FIN-07 (§3.16).
+
+**ConceptoIngresoLibre** **[NUEVO-SPEC-UI]** (catálogo de ingresos sin Cuota ni Reserva asociada — ej. "Jardín Maternal", "Eventos", "Otros")
+`Id, Nombre, Estado`
 
 **SolicitudMembresia**
 `Id, UsuarioId (FK, rol No Socio), NumeroSolicitud, Nombre, Apellido, DNI (UNIQUE dentro de solicitudes activas), FechaNacimiento, Genero [NUEVO-SPEC-UI], Email, Telefono, Domicilio, Localidad [NUEVO-SPEC-UI], Provincia [NUEVO-SPEC-UI], CategoriaPretendidaId (FK Categoria, nullable) [NUEVO-SPEC-UI], DocumentoIdentidadUrl, FichaMedicaUrl, Estado (Pendiente/Aprobada/Rechazada), MotivoRechazo, FechaSolicitud`
@@ -386,14 +412,16 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 
 ### Finanzas
 - `GET /api/cuotas`
-- `POST /api/cuotas/generar-periodo` (batch mensual/anual)
+- `GET /api/cuotas/{id}/detalle` **[NUEVO-SPEC-UI]** (desglose societaria + actividades, `CuotaDetalle`)
+- `POST /api/cuotas/generar-periodo` (batch mensual/anual — calcula `Importe` según RN-FIN-08)
 - `GET /api/pagos`
-- `POST /api/pagos` (manual)
+- `POST /api/pagos` (manual — admite `CuotaId`, `ReservaId` o `ConceptoIngresoLibreId`, RN-FIN-09)
 - `POST /api/pagos/mercadopago/checkout`
 - `POST /api/pagos/mercadopago/webhook`
 - `GET /api/pagos/{id}/comprobante`
 - `GET /api/finanzas/dashboard`
-- `GET /api/finanzas/reportes/ingresos`
+- `GET /api/finanzas/reportes/ingresos` (agrupable por `ConceptoIngresoLibre` **[NUEVO-SPEC-UI]**)
+- `CRUD /api/configuracion/conceptos-ingreso-libre` **[NUEVO-SPEC-UI]**
 
 ### Comunicaciones
 - `GET /api/comunicaciones` (filtro por tab: enviados/borradores/programados)
@@ -447,37 +475,43 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 
 ## 6. Plan de Implementación por Fases
 
-### Etapa 0 — Infraestructura y Autenticación
-- [ ] Proyecto .NET (API) + EF Core + base de datos PostgreSQL (proveedor Npgsql)
-- [ ] Modelo `Usuario`/`Rol`/`Permiso` con RBAC dinámico
-- [ ] Login, recuperación de contraseña, política de contraseñas (RN-LOG-01)
-- [ ] Middleware de autorización por permiso (no solo por rol)
-- [ ] `LogAuditoria` vía interceptor EF Core (RN-AUD-01)
-- [ ] Almacenamiento de objetos (Blob Storage) configurado
+### Etapa 0 — Infraestructura y Autenticación ✅ (2026-08-27)
+- [x] Proyecto .NET (API) + EF Core + base de datos PostgreSQL (proveedor Npgsql)
+- [x] Modelo `Usuario`/`Rol`/`Permiso` con RBAC dinámico
+- [x] Login, recuperación de contraseña, política de contraseñas (RN-LOG-01) — login verificado de punta a punta (navegador → Next.js → API → JWT → cookie httpOnly); recuperación de contraseña con flujo y validación completos, envío de email queda pendiente para Etapa 4 (Comunicaciones), documentado como TODO en `AuthController`
+- [x] Middleware de autorización por permiso (no solo por rol)
+- [x] `LogAuditoria` vía interceptor EF Core (RN-AUD-01) — verificado en vivo contra Postgres real
+- [x] Almacenamiento de objetos (Blob Storage) configurado — MinIO vía Docker Compose, `IArchivoStorageService` registrado
 
-### Etapa 1 — Socios, Grupos Familiares y Configuración base
-- [ ] ABM de Socios + ficha médica con vencimiento (RF-SOC-04 ter/quater)
-- [ ] Baja lógica con motivo (RF-SOC-12 bis) y reactivación (RN-SOC-01)
-- [ ] Grupos Familiares + regla de titularidad (RF-GF-04 bis, RN-GF-01)
-- [ ] Categorías, Coberturas Médicas
-- [ ] Cifrado de datos médicos sensibles (RN-SEG-01)
-- [ ] Carnet digital + generación de QR (base para Etapa 5)
+### Etapa 1 — Socios, Grupos Familiares y Configuración base ✅ (2026-08-27)
+- [x] ABM de Socios + ficha médica con vencimiento (RF-SOC-04 ter/quater) — verificado en vivo (alta con datos médicos, cálculo de vencimiento = emisión + 1 año)
+- [x] Baja lógica con motivo (RF-SOC-12 bis) y reactivación (RN-SOC-01)
+- [x] Grupos Familiares + regla de titularidad (RF-GF-04 bis, RN-GF-01) — verificado en vivo: `POST /api/socios/{id}/baja` sobre un titular con grupo activo devuelve `409`, y la UI lo muestra correctamente
+- [x] Categorías, Coberturas Médicas (+ Planes)
+- [x] Cifrado de datos médicos sensibles (RN-SEG-01) — verificado en vivo contra Postgres real: `GrupoSanguineo`/`ObservacionesMedicas` quedan cifrados en la columna cruda, la API los devuelve en claro. Regla transversal de visibilidad por rol (§2.2) implementada vía `FichaMedicaVigencia`.
+- [x] Carnet digital + generación de QR (base para Etapa 5) — verificado en vivo: `GET /api/socios/{id}/carnet` genera un PDF real con QR, foto/datos y estado
 
-### Etapa 2 — Actividades y Reservas
-- [ ] ABM de Actividades + validación de instructor obligatorio (RF-ACT-24 bis)
-- [ ] Inscripciones + control de cupo + aviso de superposición horaria (RN-ACT-01)
-- [ ] Rol Instructor + mini-portal (RF nuevos §2, §5)
-- [ ] ABM de Espacios con clasificación Salón/Cancha (RF-RES-27/28)
-- [ ] Reservas con calendario y anti-superposición (RF-RES-09 bis)
-- [ ] Flujo de solicitud de salón desde Portal del Socio (RF-PS-ALQ-*)
+### Etapa 2 — Actividades y Reservas ✅ (2026-08-28)
+- [x] ABM de Actividades + validación de instructor obligatorio (RF-ACT-24 bis, RN-ACT-02: `ActividadInstructor`/`DivisionInstructor` N:M) — verificado en vivo: activar una actividad sin instructor asignado devuelve `409`, asignar instructor y reintentar activa correctamente
+- [x] Inscripciones + control de cupo (`POST /api/actividades/{id}/inscripciones`) — verificado en vivo: la segunda inscripción sobre una actividad con `CupoMaximo=1` ya ocupado devuelve `409`. **Aviso de superposición horaria (RN-ACT-01) y la UI de inscripción en sí (staff y autogestión del socio) quedan pendientes** — el backend ya expone `POST/DELETE .../inscripciones`, pero ninguna pantalla los usa todavía (no había una pantalla de "Mis actividades" del socio en el alcance de esta etapa, solo Reservas)
+- [x] Rol Instructor + mini-portal (`(instructor)/instructor/actividades`, `.../inscriptos`) — verificado en vivo: login como instructor, `proxy.ts` redirige automáticamente a su portal y el listado muestra únicamente sus actividades/divisiones asignadas
+- [x] ABM de Espacios (Deportivo/Recreativo/Eventos) + Amenities
+- [x] Reservas con calendario simple (date-picker) y anti-superposición (RF-RES-09 bis) — verificado en vivo: una segunda reserva con horario superpuesto sobre el mismo espacio/fecha devuelve `409`
+- [x] Flujo de solicitud de salón desde Portal del Socio (`(socio)/mi-cuenta/reservas`) — verificado en vivo de punta a punta: alta de acceso al socio, login, listado de espacios propios (`GET /api/me/espacios`, agregado en la reconciliación — ver nota abajo), alta de reserva, visible para confirmar/rechazar en el backoffice
 
-### Etapa 3 — Finanzas
-- [ ] Generación batch de Cuotas por período (individuales y familiares, RN-FIN-03)
-- [ ] Registro de pagos manuales + exclusividad Cuota/Reserva (RF-FIN-34)
-- [ ] Integración Mercado Pago (checkout + webhook)
-- [ ] Suspensión automática por mora (RN-FIN-02) — job diario
-- [ ] Reembolsos de reservas canceladas (RN-RES-01)
-- [ ] Dashboard financiero y reportes
+**Nota de reconciliación (mismo proceso que Etapa 1 — backend y frontend se armaron en paralelo, a ciegas entre sí):** encontré y corregí ~10 mismatches de contrato (nombres de campo, `PUT .../estado` de Actividad inexistente, `instructorIds` de División apuntando a un body que no lo acepta, `Duracion` faltante en Reserva, fecha con doble sufijo de hora) y 2 bugs reales solo visibles con Postgres/UI real: `/mi-cuenta/reservas` mostraba "Invalid Date", y el selector de espacios del socio pegaba contra un endpoint que exige permiso de staff (`espacios.leer`, que Socio nunca tiene) y fallaba en silencio. Agregué `PUT /api/actividades/{id}/estado` y `GET /api/me/espacios` al backend para cerrar ambos huecos, consistente con los patrones ya establecidos (`SociosController.CambiarEstado`, `MePortalController`).
+
+### Etapa 3 — Finanzas ✅ (2026-08-28)
+- [x] Generación batch de Cuotas por período (individuales y familiares, RN-FIN-03/RN-FIN-08) — verificado en vivo: `POST /api/cuotas/generar-periodo` generó 1 cuota individual + 1 familiar con `CuotaDetalle` correctos (societaria + actividad), una segunda llamada al mismo período devolvió `{generadas:0, yaExistian:2}` (idempotencia confirmada)
+- [x] Registro de pagos manuales + exclusividad Cuota/Reserva/ConceptoIngresoLibre (RF-FIN-34 actualizado por RN-FIN-09) — verificado en vivo: pago de una Cuota y de un ingreso libre sin socio, ambos reflejados correctamente en `GET /api/pagos` y en el dashboard
+- [x] Integración Mercado Pago (checkout + webhook) — implementada con el SDK oficial (`mercadopago-sdk` v3.7.0); **sin credenciales de sandbox en este entorno, no se verificó una transacción real**: se comprobó que `POST /api/pagos/mercadopago/checkout` responde `503` de forma clara cuando `MercadoPago:AccessToken` no está configurado (comportamiento esperado), y el parseo/firma del webhook se cubre con un test unitario. Queda pendiente una verificación end-to-end con credenciales reales.
+- [x] Suspensión automática por mora (RN-FIN-02) — `MoraSuspensionHostedService` + `IMoraSuspensionService`, cubierto por un test de integración (Socio con Cuota vencida antigua → `Suspendido`). **No se esperó un ciclo real de 24hs para observarlo en vivo** (se verificó por test automatizado, no por ejecución del hosted service). La notificación al socio (RF-COM-26) no se implementa — el módulo de Comunicaciones no existe hasta Etapa 4.
+- [x] Reembolsos de reservas canceladas (RN-RES-01) — verificado en vivo de punta a punta: reserva pagada ($5.000, `PorcentajeReembolso=50%`) cancelada dentro de la ventana de política generó automáticamente un `Pago` de `$2.500` en `Estado=PendienteReembolso`. Corregido un bug real encontrado en la reconciliación: `MePortalController.CancelarReserva` (cancelación propia del Socio) no calculaba `DentroDePoliticaCancelacion` ni disparaba el reembolso — ahora comparte la misma lógica que `ReservasController.Cancelar` (staff) vía `IReembolsoReservaService`. Verificado en vivo solo por el path de staff; el path de Socio usa el mismo servicio compartido (confirmado por lectura de código), no se probó con un login de Socio real por falta de tiempo en esta sesión.
+- [x] Dashboard financiero y reportes — verificado en vivo: `GET /api/finanzas/dashboard` y `GET /api/finanzas/reportes/ingresos` reflejan correctamente los pagos e ingresos registrados, agrupados por origen (Cuota/Reserva/ConceptoIngresoLibre)
+
+**Gap real cerrado durante la reconciliación (no estaba en el SPEC hasta ahora):** no existía ninguna entidad de "Configuración General" con parámetros clave-valor, pese a que RN-FIN-02 (`MaximaDeudaEnMeses`) y RN-FIN-03 (`TipoTarifaFamiliar`) ya las mencionaban como "parámetro de Configuración". Se agregó `ConfiguracionGeneral` (fila singleton, `GET/PUT /api/configuracion/general`, acceso exclusivo SuperAdmin) y la pantalla `/configuracion/general` que §7 ya preveía en la tabla de rutas pero nunca se había construido.
+
+**Nota de reconciliación:** encontré y corregí ~10 mismatches de contrato entre los DTOs reales del backend y lo que el frontend había asumido a ciegas (`EstadoPago`: el frontend supuso `Pendiente/Acreditado/Rechazado/Anulado`, el real es `Pendiente/Pagada/Rechazada/PendienteReembolso`; `MedioPago` con los enteros en otro orden — ambos habrían enviado el medio de pago equivocado al backend; `FinanzasDashboard.ingresosMes` → `ingresosMesActual`, sin el campo `ingresosPorConcepto` inventado — reconectado a `GET /api/finanzas/reportes/ingresos`, que sí existe; el endpoint inventado `POST /api/me/cuotas/pagar` en plural no existe — el "pagar todo" del socio reutiliza `POST /api/pagos/mercadopago/checkout`, el mismo que usa el backoffice; `ConceptoIngresoLibre` no tiene reactivación, solo baja de un sentido, igual que Amenities). Además, dos bugs reales solo visibles con Postgres/UI real y no detectados por `npm run build`: tanto `GET /api/cuotas` como `GET /api/reservas` siempre devuelven `PagedResult` (nunca un array plano), y el frontend de `/pagos` y `/socios/[id]/pagos` los trataba como arrays — crasheaba con `TypeError: .filter is not a function` al abrir el diálogo de "Registrar pago manual".
 
 ### Etapa 4 — Comunicaciones y Notificaciones
 - [ ] Editor de comunicaciones + destinatarios segmentados
@@ -617,14 +651,14 @@ De las 100 pantallas auditadas, ~35 eran duplicados/iteraciones de diseño de la
 
 ### 7.3 Mapeo de Datos UI↔API: Resultado de la Auditoría
 
-**Resuelto directamente en el modelo (§4.2) y en los endpoints (§5):** todos los campos y entidades nuevas listadas ahí (`Plan`, `DivisionDeportiva`, `ActividadInstructor`/`DivisionInstructor`, `Amenity`, `ConsultaSocio`, `ComunicacionAdjunto`, y los campos sueltos como `Socio.Modalidad`, `GrupoFamiliar.Nombre`/`NumeroGrupo`/`Tipo`, `Reserva.Observaciones`/`TipoReserva`/`CantidadInvitados`, `Cuota.RecargoMora`, `Pago.Concepto`, etc.) provienen directamente de esta auditoría visual y ya están incorporados. También se resolvió sin necesidad de campo nuevo: el pago múltiple de cuotas (RN-FIN-07, §3.16) y el reemplazo del instructor único por relación N:M (RN-ACT-02, §3.17).
+**Resuelto directamente en el modelo (§4.2) y en los endpoints (§5):** todos los campos y entidades nuevas listadas ahí (`Plan`, `DivisionDeportiva`, `ActividadInstructor`/`DivisionInstructor`, `Amenity`, `ConsultaSocio`, `ComunicacionAdjunto`, `CuotaDetalle`, y los campos sueltos como `Socio.Modalidad`, `GrupoFamiliar.Nombre`/`NumeroGrupo`/`Tipo`, `Reserva.Observaciones`/`TipoReserva`/`CantidadInvitados`, `Cuota.RecargoMora`, `Pago.Concepto`, `Rol.NivelJerarquico`, etc.) provienen directamente de esta auditoría visual y ya están incorporados. También se resolvió sin necesidad de campo nuevo: el pago múltiple de cuotas (RN-FIN-07, §3.16) y el reemplazo del instructor único por relación N:M (RN-ACT-02, §3.17).
 
 **Cambio de nomenclatura aplicado (bajo riesgo, no requiere decisión de negocio):** los valores del enum `Espacio.Tipo` se ajustaron de `Salon/CanchaDeportiva/Otro` (RF-RES-27 original) a `Deportivo/Recreativo/Eventos`, que es lo que el diseño realmente implementa.
 
-**Conflictos detectados que SÍ requieren una decisión de producto antes de implementarse** (no se resolvieron unilateralmente):
+**Conflictos resueltos por decisión de Product Owner (2026-08-27):**
 
-1. **Cuota de Actividad vs. Cuota Social.** El diseño (`SOCIOS-PAGOS.png`, `Finanzas.png` con "Ingresos por Deporte") muestra actividades con cuota mensual propia, cobrable independientemente de la cuota social del socio. El modelo v3 solo genera `Cuota` desde `Socio`/`GrupoFamiliar`. Se agregó `Actividad.Precio` como dato, pero **falta definir** si la cuota de actividad se emite como una `Cuota` más (requiere que `Cuota` pueda referenciar una `Actividad`, además de `Socio`/`GrupoFamiliar`) o si es un concepto de facturación totalmente aparte.
-2. **Rol "Administrador" con acceso a Configuración.** Varias pantallas de Configuración (Roles y permisos, Usuarios, General) muestran al usuario logueado identificado como "Administrador", pero la matriz §2.2 restringe Configuración General, Gestión de Usuarios y Gestión de Roles exclusivamente a SuperAdministrador. Falta confirmar si es un rótulo genérico del prototipo o si la matriz de permisos debe ampliarse.
-3. **Ingresos sin vínculo a Cuota/Reserva.** El dashboard financiero (`Finanzas.png`) muestra categorías de ingreso como "Jardín", "Eventos" y "Otros ingresos" sin relación aparente con `Cuota` o `Reserva`. RF-FIN-34 exige que todo `Pago` referencie exactamente una de las dos. Falta definir si estos ingresos deben modelarse como un tipo de `Pago` "libre" (sin `CuotaId` ni `ReservaId`) o si en realidad cuelgan de una `Reserva`/`Cuota` ya existente que la UI no está mostrando con claridad.
+1. **Cuota de Actividad vs. Cuota Social.** Definido: la cuota de actividad **no** es un registro cobrable independiente. El total mensual del socio surge de sumar la cuota societaria base más el precio de cada actividad en la que está inscripto, en una única `Cuota` consolidada — ver `CuotaDetalle` y RN-FIN-08 (§3.18).
+2. **Rol "Administrador" con acceso a Configuración.** Definido: Administrador sí hace ABM de usuarios, restringido a roles de jerarquía inferior a la suya; Roles y Configuración General siguen exclusivos de SuperAdmin — ver `Rol.NivelJerarquico` y RN-ADM-01 (§3.19).
+3. **Ingresos sin vínculo a Cuota/Reserva.** Definido: se agrega un tercer origen posible al `Pago` (`ConceptoIngresoLibreId`, catálogo administrable), en vez de forzar estos ingresos dentro de `Cuota`/`Reserva` o construir un módulo contable aparte — ver `ConceptoIngresoLibre` y RN-FIN-09 (§3.20).
 
-Estos tres puntos quedan pendientes de definición del club/Product Owner antes de tocar el modelo o los endpoints correspondientes.
+No quedan conflictos pendientes de esta auditoría de diseño.

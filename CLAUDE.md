@@ -12,6 +12,6 @@
 - Clean Architecture / Arquitectura en capas en el backend (`Domain` → `Application` → `Infrastructure` → `API`).
 
 ## Stack Tecnológico Obligatorio
-- **Backend / API:** .NET 8 (C#), ASP.NET Core Web API (Controllers), Entity Framework Core, PostgreSQL como base de datos por defecto (swap a SQL Server soportado vía proveedor EF Core).
+- **Backend / API:** .NET 8 (C#), ASP.NET Core Web API (Controllers), Entity Framework Core, **PostgreSQL (proveedor Npgsql) como base de datos oficial y definitiva del proyecto** — no un default reemplazable. Cifrado de columnas sensibles (ficha médica) vía `pgcrypto` o cifrado a nivel de aplicación (.NET Data Protection API); no se usa `Always Encrypted` (es exclusivo de SQL Server).
 - **Frontend Web:** Next.js (TypeScript, App Router), Tailwind CSS, consumiendo la API .NET mediante un cliente tipado generado desde `swagger.json`.
 - No introducir otro framework backend (Express, NestJS, etc.) ni otro framework frontend (Vue, Angular, etc.) sin actualizar primero este archivo y `SPEC.md`.
