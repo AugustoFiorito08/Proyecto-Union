@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ProyectoUnion.Application.Interfaces;
 using ProyectoUnion.Domain.Entities;
 using ProyectoUnion.Infrastructure.Comunicaciones;
+using ProyectoUnion.Infrastructure.ControlAcceso;
 using ProyectoUnion.Infrastructure.Finanzas;
 using ProyectoUnion.Infrastructure.Identity;
 using ProyectoUnion.Infrastructure.MercadoPago;
@@ -100,6 +101,9 @@ public static class DependencyInjection
         services.AddScoped<IComunicacionService, ComunicacionService>();
         services.AddScoped<ICumpleanosService, CumpleanosService>();
         services.AddScoped<IRecordatorioVencimientoService, RecordatorioVencimientoService>();
+
+        // ---- Etapa 5: Control de Acceso (QR) ----
+        services.AddScoped<IControlAccesoService, ControlAccesoService>();
 
         return services;
     }

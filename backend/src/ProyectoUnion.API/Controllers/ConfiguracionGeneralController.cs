@@ -63,6 +63,7 @@ public class ConfiguracionGeneralController : ControllerBase
         configuracion.TarifaPlanaGrupoImporte = tipoTarifaFamiliar == TipoTarifaFamiliar.TarifaPlanaGrupo
             ? request.TarifaPlanaGrupoImporte
             : null;
+        configuracion.ToleranciaAccesoDiasCuotaVencida = request.ToleranciaAccesoDiasCuotaVencida;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -85,7 +86,8 @@ public class ConfiguracionGeneralController : ControllerBase
         {
             Id = ConfiguracionGeneral.IdFijo,
             MaximaDeudaEnMeses = 2,
-            TipoTarifaFamiliar = TipoTarifaFamiliar.SumaCategoriasIndividuales
+            TipoTarifaFamiliar = TipoTarifaFamiliar.SumaCategoriasIndividuales,
+            ToleranciaAccesoDiasCuotaVencida = 10
         };
 
         _dbContext.ConfiguracionesGenerales.Add(configuracion);
@@ -97,5 +99,6 @@ public class ConfiguracionGeneralController : ControllerBase
     private static ConfiguracionGeneralResponse MapearAResponse(ConfiguracionGeneral c) => new(
         c.MaximaDeudaEnMeses,
         c.TipoTarifaFamiliar.ToString(),
-        c.TarifaPlanaGrupoImporte);
+        c.TarifaPlanaGrupoImporte,
+        c.ToleranciaAccesoDiasCuotaVencida);
 }

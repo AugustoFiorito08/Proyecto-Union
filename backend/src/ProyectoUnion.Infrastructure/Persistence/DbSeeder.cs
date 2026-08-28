@@ -136,7 +136,11 @@ public static class DbSeeder
 
         ("consultas.crear", "Alta de consultas de socios (uso interno/backoffice).", "Consultas"),
         ("consultas.leer", "Consulta de las consultas de socios.", "Consultas"),
-        ("consultas.editar", "Responder consultas de socios.", "Consultas")
+        ("consultas.editar", "Responder consultas de socios.", "Consultas"),
+
+        // ---- Etapa 5 ----
+        ("control-acceso.validar", "Validación de QR en portería (registra el intento de acceso).", "ControlAcceso"),
+        ("control-acceso.leer", "Consulta del historial de accesos.", "ControlAcceso")
     ];
 
     // ---- Etapa 1: RolPermiso — SPEC.md §2.2 ----
@@ -229,6 +233,16 @@ public static class DbSeeder
     private static readonly string[] PermisosConsultasStaff =
     [
         "consultas.crear", "consultas.leer", "consultas.editar"
+    ];
+
+    // ---- Etapa 5: RolPermiso — SPEC.md §2.2 fila "Control de Acceso (QR)": SuperAdmin/
+    // Administrador CLMB, Empleado "CL (operar portería)". No hay ABM de RegistroAcceso (solo
+    // se crea internamente al validar), así que "CLMB" acá se traduce a los 2 únicos permisos
+    // del módulo (validar equivale a "crear" el registro, leer al historial); B(aja) no
+    // aplica. Instructor/Socio/NoSocio: sin acceso (matriz: "—").
+    private static readonly string[] PermisosControlAccesoStaff =
+    [
+        "control-acceso.validar", "control-acceso.leer"
     ];
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
@@ -327,7 +341,8 @@ public static class DbSeeder
             Id = ConfiguracionGeneral.IdFijo,
             MaximaDeudaEnMeses = 2,
             TipoTarifaFamiliar = TipoTarifaFamiliar.SumaCategoriasIndividuales,
-            TarifaPlanaGrupoImporte = null
+            TarifaPlanaGrupoImporte = null,
+            ToleranciaAccesoDiasCuotaVencida = 10
         });
 
         await dbContext.SaveChangesAsync();
@@ -462,18 +477,21 @@ public static class DbSeeder
                 .Concat(PermisosConfiguracionGeneralSoloSuperAdmin)
                 .Concat(PermisosComunicacionesCLMBCompleto)
                 .Concat(PermisosConsultasStaff)
+                .Concat(PermisosControlAccesoStaff)
                 .ToArray()),
             ("Administrador", PermisosCLMBCompleto
                 .Concat(PermisosActividadesEspaciosReservasCLMBCompleto)
                 .Concat(PermisosFinanzasCLMBCompleto)
                 .Concat(PermisosComunicacionesCLMBCompleto)
                 .Concat(PermisosConsultasStaff)
+                .Concat(PermisosControlAccesoStaff)
                 .ToArray()),
             ("EmpleadoSecretaria", PermisosEmpleadoSecretaria
                 .Concat(PermisosEmpleadoSecretariaEtapa2)
                 .Concat(PermisosFinanzasEmpleadoSecretaria)
                 .Concat(PermisosComunicacionesEmpleadoSecretaria)
                 .Concat(PermisosConsultasStaff)
+                .Concat(PermisosControlAccesoStaff)
                 .ToArray())
         };
 

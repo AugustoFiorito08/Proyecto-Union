@@ -80,6 +80,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
 
     public DbSet<ConsultaSocio> ConsultasSocio => Set<ConsultaSocio>();
 
+    public DbSet<RegistroAcceso> RegistrosAcceso => Set<RegistroAcceso>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

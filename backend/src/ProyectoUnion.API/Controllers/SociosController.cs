@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ProyectoUnion.Application.Common;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.Socios;
 using ProyectoUnion.Application.Interfaces;
@@ -524,31 +525,10 @@ public class SociosController : ControllerBase
     private bool PuedeVerFichaMedicaCompleta() =>
         int.TryParse(User.FindFirst(ProyectoUnionClaimTypes.NivelJerarquico)?.Value, out var nivel) && nivel <= 2;
 
-    /// <summary>
-    /// Semáforo de vigencia expuesto a roles sin acceso a la ficha médica completa. El umbral
-    /// de 30 días para "próxima a vencer" es una decisión de implementación razonable, no
-    /// especificada literalmente en el SPEC.
-    /// </summary>
-    private static string? CalcularVigenciaFichaMedica(DateTime? vencimiento)
-    {
-        if (!vencimiento.HasValue)
-        {
-            return null;
-        }
-
-        var diasRestantes = (vencimiento.Value.Date - DateTime.UtcNow.Date).TotalDays;
-        if (diasRestantes < 0)
-        {
-            return "Vencida";
-        }
-
-        return diasRestantes <= 30 ? "ProximaAVencer" : "Vigente";
-    }
-
     private SocioResponse MapearAResponse(Socio s)
     {
         var puedeVerFichaMedicaCompleta = PuedeVerFichaMedicaCompleta();
-        var vigencia = CalcularVigenciaFichaMedica(s.FichaMedicaFechaVencimiento);
+        var vigencia = FichaMedicaVigenciaCalculator.Calcular(s.FichaMedicaFechaVencimiento);
 
         return new SocioResponse(
             s.Id,

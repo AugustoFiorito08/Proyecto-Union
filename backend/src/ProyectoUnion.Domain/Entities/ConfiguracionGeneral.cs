@@ -33,4 +33,10 @@ public class ConfiguracionGeneral
 
     /// <summary>Solo se usa si <see cref="TipoTarifaFamiliar"/> es TarifaPlanaGrupo.</summary>
     public decimal? TarifaPlanaGrupoImporte { get; set; }
+
+    /// <summary>
+    /// Días de tolerancia desde el vencimiento de una Cuota (Estado=Vencida) antes de que
+    /// bloquee el acceso por QR en portería (RN-ACC-02 paso 3, SPEC.md §3.1, Etapa 5).
+    /// </summary>
+    public int ToleranciaAccesoDiasCuotaVencida { get; set; } = 10;
 }
