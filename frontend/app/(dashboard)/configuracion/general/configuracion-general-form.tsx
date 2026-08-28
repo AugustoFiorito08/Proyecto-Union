@@ -36,6 +36,10 @@ const configuracionSchema = z.object({
     { message: "Seleccioná el modo de cálculo." }
   ),
   tarifaPlanaGrupoImporte: z.number().optional(),
+  toleranciaAccesoDiasCuotaVencida: z
+    .number({ error: "Ingresá la tolerancia en días." })
+    .int("Tiene que ser un número entero.")
+    .min(0, "No puede ser negativo."),
 });
 
 type ConfiguracionFormValues = z.infer<typeof configuracionSchema>;
@@ -67,6 +71,7 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
       maximaDeudaEnMeses: configuracion?.maximaDeudaEnMeses ?? 2,
       tipoTarifaFamiliar: configuracion?.tipoTarifaFamiliar ?? "TarifaPlanaGrupo",
       tarifaPlanaGrupoImporte: configuracion?.tarifaPlanaGrupoImporte ?? undefined,
+      toleranciaAccesoDiasCuotaVencida: configuracion?.toleranciaAccesoDiasCuotaVencida ?? 0,
     },
   });
 
@@ -82,6 +87,7 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
         maximaDeudaEnMeses: values.maximaDeudaEnMeses,
         tipoTarifaFamiliar: values.tipoTarifaFamiliar,
         tarifaPlanaGrupoImporte: esTarifaPlana ? values.tarifaPlanaGrupoImporte : undefined,
+        toleranciaAccesoDiasCuotaVencida: values.toleranciaAccesoDiasCuotaVencida,
       });
 
       if (!result.success) {
@@ -183,6 +189,37 @@ export function ConfiguracionGeneralForm({ configuracion }: ConfiguracionGeneral
               </p>
             ) : null}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Control de acceso</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="toleranciaAccesoDiasCuotaVencida">
+            Tolerancia de cuota vencida (días)
+          </Label>
+          <Input
+            id="toleranciaAccesoDiasCuotaVencida"
+            type="number"
+            min="0"
+            step="1"
+            className="max-w-40"
+            aria-invalid={!!errors.toleranciaAccesoDiasCuotaVencida}
+            {...register("toleranciaAccesoDiasCuotaVencida", { valueAsNumber: true })}
+          />
+          {errors.toleranciaAccesoDiasCuotaVencida ? (
+            <p className="text-sm text-destructive">
+              {errors.toleranciaAccesoDiasCuotaVencida.message}
+            </p>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Cantidad de días después del vencimiento de una cuota durante los cuales el Control
+            de Acceso todavía permite el ingreso en portería (RN-ACC-02). Superada la tolerancia,
+            el escaneo del carnet se deniega con motivo &quot;Cuota vencida&quot; hasta que el
+            socio regularice el pago.
+          </p>
         </CardContent>
 
         <CardFooter className="justify-end gap-2">

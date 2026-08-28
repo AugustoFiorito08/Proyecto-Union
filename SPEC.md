@@ -525,10 +525,14 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 1. No existía un endpoint `GET /api/comunicaciones/{id}` (nunca estuvo en la lista original de §5) pese a que la edición de un borrador lo necesita — se agregó, mismo patrón que el resto del controller.
 2. **Bug de seguridad real**: `POST /api/auth/forgot-password` devolvía un mensaje de texto distinto según si el email existía o no en el sistema (aunque el código comentaba la intención contraria), permitiendo enumerar cuentas por email — corregido para que la respuesta sea byte-idéntica en ambas ramas.
 
-### Etapa 5 — Control de Acceso (QR)
-- [ ] Emisión de token QR opaco por socio (RN-ACC-05)
-- [ ] Endpoint de validación en portería + reglas RN-ACC-02/03/04
-- [ ] Historial de accesos y consulta por socio
+### Etapa 5 — Control de Acceso (QR) ✅ (2026-08-28)
+- [x] Emisión de token QR opaco por socio (RN-ACC-05) — **ya estaba resuelta desde Etapa 1**: `Socio.CodigoQr` es un token aleatorio de 24 bytes (`RandomNumberGenerator`, nunca datos personales), impreso en el carnet PDF. Etapa 5 solo lo consume, no generó nada nuevo acá.
+- [x] Endpoint de validación en portería + reglas RN-ACC-02/03/04 — `POST /api/control-acceso/validar` — verificado en vivo, los 3 casos con datos reales: QR inexistente → `Denegado`/"QR no reconocido"; socio suspendido → `Denegado`/"Socio suspendido"; socio activo al día → `Permitido` con foto+nombre. Los casos de cuota vencida más allá de la tolerancia y ficha médica vencida se verificaron solo por test de integración (armar esos dos escenarios en vivo requería manipular fechas del sistema) — cubiertos igual, 5/5 tests en verde. Cada validación queda registrada en `RegistroAcceso` (RN-ACC-03).
+- [x] Historial de accesos y consulta por socio — `GET /api/control-acceso/historial?socioId=`, verificado en vivo reflejando los 4 intentos de la sesión de prueba en orden correcto. "Consulta por socio" es filtro de staff (`?socioId=`), no autogestión — la matriz §2.2 no le da acceso a este módulo al rol Socio.
+
+**Extensión de `ConfiguracionGeneral` (Etapa 3)**: se agregó `ToleranciaAccesoDiasCuotaVencida` (default 10 días) — RN-ACC-02 punto 3 necesitaba un parámetro de tolerancia que no existía, mismo patrón que `MaximaDeudaEnMeses`, sin crear una tabla de configuración nueva.
+
+**Nota de reconciliación:** el backend se auto-commiteó al terminar (fuera del flujo habitual de esperar mi reconciliación) — no generó ningún problema real, solo significa que esta etapa quedó en 2 commits en vez de 1. Encontré y corregí un mismatch de contrato: el frontend asumió `numeroSocio` (no existe en ningún DTO real) y un campo combinado `socioApellidoNombres` en la respuesta de `POST /validar` — el DTO real (`ValidarAccesoResponse`) trae `apellido`/`nombres` por separado (a diferencia de `RegistroAccesoResponse`, que sí combina). No fue una etapa con portales nuevos ni jobs — la más chica hasta ahora.
 
 ### Etapa 6 — Solicitudes de Membresía y Portal Público
 - [ ] Formulario público + creación de cuenta No Socio

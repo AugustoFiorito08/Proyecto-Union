@@ -696,12 +696,21 @@ export interface ConfiguracionGeneral {
   tipoTarifaFamiliar: TipoTarifaFamiliar;
   /** Solo relevante/editable si `tipoTarifaFamiliar === "TarifaPlanaGrupo"`. */
   tarifaPlanaGrupoImporte?: number | null;
+  /**
+   * [NUEVO-SPEC-UI, Etapa 5] RN-ACC-02 (§3.1): días de tolerancia después del
+   * vencimiento de una cuota antes de que el Control de Acceso bloquee el
+   * ingreso en portería. Se agrega a la misma fila singleton de
+   * `ConfiguracionGeneral` — no hay una pantalla de configuración aparte para
+   * Control de Acceso.
+   */
+  toleranciaAccesoDiasCuotaVencida: number;
 }
 
 export interface ConfiguracionGeneralInput {
   maximaDeudaEnMeses: number;
   tipoTarifaFamiliar: TipoTarifaFamiliar;
   tarifaPlanaGrupoImporte?: number;
+  toleranciaAccesoDiasCuotaVencida: number;
 }
 
 /**
@@ -885,4 +894,62 @@ export interface MeComunicacion {
   fechaCreacion: string;
   fechaEnvio?: string | null;
   fechaLectura?: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Etapa 5 — Control de Acceso (QR) (SPEC.md §3.1 RN-ACC-01 a 05, §4.2
+// "RegistroAcceso", §5 "Control de Acceso"). El backend real de esta etapa lo
+// construye otro agente en paralelo — no hay entidad de backend verificada
+// todavía (mismo caso que Etapas 3/4). Shapes 100% basados en SPEC.md + los
+// mismos criterios de contrato de etapas anteriores (relaciones como campo
+// plano, enums como string al leer). A diferencia de los módulos anteriores,
+// este NO tiene ninguna ruta prevista en §7 (nunca pasó por la auditoría de
+// Figma) — las pantallas se diseñaron desde cero siguiendo el estilo visual
+// del resto del backoffice. A reconciliar contra el backend real.
+// ---------------------------------------------------------------------------
+
+export type ResultadoAcceso = "Permitido" | "Denegado";
+
+/** Body de `POST /api/control-acceso/validar` (RN-ACC-05: el QR es un token opaco firmado, nunca un id en claro). */
+export interface ValidarAccesoInput {
+  codigoQr: string;
+}
+
+/**
+ * `ValidarAccesoResponse` (confirmado contra el backend real). Incluye los
+ * datos del socio (si el token se pudo resolver) tanto si el acceso se
+ * permite como si se deniega — RN-ACC-03/04 exigen mostrarle al operador la
+ * foto y el nombre en ambos casos (para un "Denegado" porque necesita saber a
+ * quién le está negando el paso, no solo el motivo). `apellido`/`nombres`/etc.
+ * vienen `null` únicamente cuando el motivo es "QR no reconocido" (el token
+ * no resolvió a ningún socio). `motivoDenegacion` viaja `null` cuando
+ * `resultado` es "Permitido". No hay `numeroSocio` ni `socioApellidoNombres`
+ * combinado acá — a diferencia de `RegistroAcceso`, este DTO trae
+ * `apellido`/`nombres` por separado.
+ */
+export interface ValidarAccesoResponse {
+  resultado: ResultadoAcceso;
+  motivoDenegacion?: string | null;
+  fechaHora: string;
+  socioId?: string | null;
+  apellido?: string | null;
+  nombres?: string | null;
+  fotoUrl?: string | null;
+}
+
+/**
+ * `RegistroAccesoResponse` (§4.2, confirmado contra el backend real) — fila
+ * de `GET /api/control-acceso/historial`. Mismo criterio de campos planos
+ * que `Pago`/`Cuota`: ni el Socio ni el operador (`Usuario`) viajan como
+ * objeto anidado. No hay `numeroSocio` en esta respuesta.
+ */
+export interface RegistroAcceso {
+  id: string;
+  socioId?: string | null;
+  socioApellidoNombres?: string | null;
+  fechaHora: string;
+  resultado: ResultadoAcceso;
+  motivoDenegacion?: string | null;
+  operadorUsuarioId: string;
+  operadorEmail: string;
 }

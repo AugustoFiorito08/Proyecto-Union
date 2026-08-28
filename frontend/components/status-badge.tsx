@@ -34,6 +34,9 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   // ConsultaSocio.Estado (Etapa 4) — "Pendiente" ya cubierto arriba.
   Respondida: "default",
   Cerrada: "secondary",
+  // RegistroAcceso.Resultado (Etapa 5)
+  Permitido: "default",
+  Denegado: "destructive",
 };
 
 interface StatusBadgeProps {

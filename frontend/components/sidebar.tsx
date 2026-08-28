@@ -17,13 +17,17 @@ import {
   Tags,
   Mail,
   MessageCircleQuestion,
+  ScanLine,
+  History,
 } from "lucide-react";
 
 // Navegación de Etapa 1 + Etapa 2 parte 1 + Etapa 3 (Finanzas) + Etapa 4
-// (Comunicaciones, SPEC.md §7.1, route group `(dashboard)`). Los módulos de
-// etapas futuras (Control de Acceso, Solicitudes de Membresía) no se listan
-// todavía — se agregan a medida que se implementan sus rutas, para no
-// mostrar ítems que hoy darían 404.
+// (Comunicaciones) + Etapa 5 (Control de Acceso, SPEC.md §7.1, route group
+// `(dashboard)`). Control de Acceso no tenía ruta prevista en §7 (nunca pasó
+// por la auditoría de Figma) — se agregó acá con label pensado para un
+// operador de portería, no para el resto del backoffice. El módulo de etapa
+// futura (Solicitudes de Membresía) todavía no se lista — se agrega recién
+// cuando se implemente su ruta, para no mostrar ítems que hoy darían 404.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/socios", label: "Socios", icon: Users },
@@ -32,6 +36,8 @@ const NAV_ITEMS = [
   { href: "/instructores", label: "Instructores", icon: Contact },
   { href: "/espacios", label: "Espacios", icon: Building2 },
   { href: "/reservas", label: "Reservas", icon: CalendarClock },
+  { href: "/control-acceso", label: "Control de Acceso", icon: ScanLine },
+  { href: "/control-acceso/historial", label: "Historial de Accesos", icon: History },
   { href: "/pagos", label: "Pagos", icon: Receipt },
   { href: "/finanzas/dashboard", label: "Finanzas", icon: LineChart },
   { href: "/comunicaciones", label: "Comunicaciones", icon: Mail },
