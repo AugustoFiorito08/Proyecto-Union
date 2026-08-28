@@ -105,7 +105,7 @@ export function InstructorAltaDialog() {
   }
 
   function handleCopiar() {
-    if (!creado) return;
+    if (!creado?.passwordTemporal) return;
     navigator.clipboard?.writeText(creado.passwordTemporal).then(() => {
       setCopiado(true);
     });
@@ -198,23 +198,33 @@ export function InstructorAltaDialog() {
             <DialogHeader>
               <DialogTitle>Instructor creado</DialogTitle>
               <DialogDescription>
-                Contraseña temporal generada para {creado?.apellido}, {creado?.nombres}. Se
-                muestra una única vez — comunicásela manualmente (el envío automático por email
-                queda para Etapa 4).
+                {creado?.passwordEnviadaPorEmail
+                  ? `Se envió la contraseña temporal al email del instructor (${creado?.email}).`
+                  : `No se pudo enviar el email a ${creado?.apellido}, ${creado?.nombres}. Comunicále la contraseña manualmente — se muestra una única vez.`}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-              <code className="flex-1 font-mono text-sm">{creado?.passwordTemporal}</code>
-              <Button type="button" variant="ghost" size="sm" onClick={handleCopiar}>
-                <Copy className="size-4" aria-hidden="true" />
-                {copiado ? "Copiada" : "Copiar"}
-              </Button>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Una vez que cierres este diálogo no vas a poder volver a ver esta contraseña.
-            </p>
+            {creado?.passwordEnviadaPorEmail ? (
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                El instructor ya puede iniciar sesión con la contraseña que recibió por email.
+              </p>
+            ) : (
+              <>
+                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  El envío de email falló. Comunicá esta contraseña temporal manualmente.
+                </p>
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                  <code className="flex-1 font-mono text-sm">{creado?.passwordTemporal}</code>
+                  <Button type="button" variant="ghost" size="sm" onClick={handleCopiar}>
+                    <Copy className="size-4" aria-hidden="true" />
+                    {copiado ? "Copiada" : "Copiar"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Una vez que cierres este diálogo no vas a poder volver a ver esta contraseña.
+                </p>
+              </>
+            )}
 
             <DialogFooter>
               <Button onClick={() => setOpen(false)}>Entendido, cerrar</Button>

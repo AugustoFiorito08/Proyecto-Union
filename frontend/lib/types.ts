@@ -352,13 +352,18 @@ export interface InstructorEditarInput {
 }
 
 /**
- * [NUEVO-SPEC, supuesto] Respuesta de `POST /api/instructores`: además de los
- * campos de `Instructor`, incluye la contraseña temporal generada para la
- * cuenta de usuario recién creada — se muestra una única vez en el diálogo de
- * confirmación del alta (RF-LOG-*, RN-LOG-01), nunca se vuelve a exponer.
+ * [NUEVO-SPEC, supuesto — CAMBIO DE CONTRATO Etapa 4] Respuesta de
+ * `POST /api/instructores`: hasta Etapa 3 devolvía siempre `passwordTemporal`
+ * en texto plano (placeholder de Etapa 0-2, TODO documentado). Etapa 4 cierra
+ * ese TODO: la contraseña ahora se envía por email real y la respuesta pasa a
+ * indicar el resultado de ese envío (`passwordEnviadaPorEmail`);
+ * `passwordTemporal` solo viaja como fallback de emergencia cuando el envío
+ * de email falló (`passwordEnviadaPorEmail: false`). Mismo shape que
+ * `CrearAccesoResponse` (Socio) — ver comentario ahí.
  */
 export interface InstructorAltaResult extends Instructor {
-  passwordTemporal: string;
+  passwordEnviadaPorEmail: boolean;
+  passwordTemporal?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -550,9 +555,20 @@ export interface InscriptoActividad {
 // poder ejercitar el Portal del Socio; ver `backend/.../Dtos/Socios/CrearAccesoResponse.cs`).
 // ---------------------------------------------------------------------------
 
+/**
+ * [CAMBIO DE CONTRATO Etapa 4] `POST /api/socios/{id}/crear-acceso`. Hasta
+ * Etapa 3 el backend devolvía siempre `passwordTemporal` en texto plano — la
+ * pantalla la mostraba en el diálogo (placeholder de Etapa 0-2, TODO
+ * documentado en `AuthController`/`CrearAccesoDialog`). Etapa 4 cierra ese
+ * TODO: la contraseña temporal ahora se envía por email real;
+ * `passwordEnviadaPorEmail` indica si ese envío tuvo éxito. `passwordTemporal`
+ * solo viaja cuando `passwordEnviadaPorEmail === false`, como fallback de
+ * emergencia para que el operador se la comunique manualmente al socio.
+ */
 export interface CrearAccesoResponse {
   usuarioId: string;
-  passwordTemporal: string;
+  passwordEnviadaPorEmail: boolean;
+  passwordTemporal?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -717,4 +733,156 @@ export interface ReporteIngresosItem {
 export interface MercadoPagoCheckoutResponse {
   checkoutUrl: string;
   pagoIds: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Etapa 4 — Comunicaciones y Consultas del Socio (SPEC.md §4.2 "Comunicacion"
+// / "ComunicacionDestinatario" / "ComunicacionAdjunto" / "ConsultaSocio", §5
+// "Comunicaciones" / "Consultas del Socio", §7.2 `<ComunicacionWizard />`).
+// El backend real de esta etapa lo construye otro agente en paralelo — no hay
+// entidades de backend verificadas todavía (mismo caso que Etapa 3). Shapes
+// 100% basados en SPEC.md + los mismos criterios de contrato de etapas
+// anteriores (relaciones como campo plano, enums como string al leer / número
+// al escribir vía `lib/enums.ts`). A reconciliar contra el backend real.
+// ---------------------------------------------------------------------------
+
+/** `Comunicacion.TipoComunicacion` — confirmado contra `Domain/Entities/Comunicacion.cs`. */
+export type TipoComunicacion = "Novedad" | "Recordatorio" | "Cumpleanos" | "Otro";
+
+/** `Comunicacion.Estado` — confirmado contra `Domain/Entities/Comunicacion.cs`. */
+export type EstadoComunicacion = "Borrador" | "Programada" | "Enviada";
+
+export type CanalComunicacion = "Email" | "WhatsApp" | "Novedad";
+
+/** `ComunicacionDestinatario.EstadoEnvio` — confirmado contra el backend real. */
+export type EstadoEnvioComunicacion = "Pendiente" | "Enviado" | "Fallido";
+
+/**
+ * `ComunicacionResponse` (confirmado contra el backend real) — se usa tanto
+ * para listado como para detalle (`GET /api/comunicaciones` y `GET .../{id}`
+ * comparten el mismo shape); no incluye `contenidoHtml` como parte de una
+ * variante "resumen" separada — el backend lo devuelve siempre. `adjuntos`
+ * NO viaja como lista aquí, solo `cantidadAdjuntos` — la lista real de
+ * adjuntos solo se conoce por la respuesta de `POST .../adjuntos` en el
+ * momento de subirlos.
+ */
+export interface Comunicacion {
+  id: string;
+  asunto: string;
+  descripcion?: string | null;
+  contenidoHtml: string;
+  tipoComunicacion: TipoComunicacion;
+  estado: EstadoComunicacion;
+  fechaProgramada?: string | null;
+  creadoPorUsuarioId: string;
+  creadoPorEmail?: string | null;
+  fechaCreacion: string;
+  fechaUltimoEnvio?: string | null;
+  cantidadDestinatarios: number;
+  cantidadAdjuntos: number;
+}
+
+export interface ComunicacionAdjunto {
+  id: string;
+  archivoUrl: string;
+  nombreArchivo: string;
+}
+
+/** Fila de `GET /api/comunicaciones/{id}/trazabilidad` (`ComunicacionDestinatarioResponse`). */
+export interface ComunicacionDestinatario {
+  id: string;
+  usuarioId: string;
+  socioId?: string | null;
+  socioNombre?: string | null;
+  canal: CanalComunicacion;
+  estadoEnvio: EstadoEnvioComunicacion;
+  fechaEnvio?: string | null;
+  fechaLectura?: string | null;
+  motivoFallo?: string | null;
+}
+
+/**
+ * Selector de destinatario segmentado del wizard (§7.2: "Todos los socios /
+ * Grupo o categoría / Socio específico / Novedad" — mutuamente excluyentes,
+ * "Novedad" en rigor es un canal, no un segmento, así que se modela junto a
+ * `canales`). [SUPUESTO] shape del body — a reconciliar.
+ */
+export interface ComunicacionSegmentoInput {
+  todos: boolean;
+  categoriaId?: string;
+  grupoFamiliarId?: string;
+  socioIds?: string[];
+}
+
+/** Body de `POST`/`PUT /api/comunicaciones/{id}` (borrador). [SUPUESTO], ver comentario de `ComunicacionSegmentoInput`. */
+export interface ComunicacionInput {
+  asunto: string;
+  descripcion?: string;
+  contenidoHtml: string;
+  tipoComunicacion: TipoComunicacion;
+  segmento: ComunicacionSegmentoInput;
+  canales: CanalComunicacion[];
+}
+
+/** Body de `POST /api/comunicaciones/{id}/programar` (§5, setea `FechaProgramada`). */
+export interface ProgramarComunicacionInput {
+  fechaProgramada: string;
+}
+
+// ---------------------------------------------------------------------------
+// Consultas del Socio (dirección inversa: socio → club)
+// ---------------------------------------------------------------------------
+
+export type EstadoConsulta = "Pendiente" | "Respondida" | "Cerrada";
+
+/**
+ * `ConsultaSocioResponse` — confirmado contra el backend real. `Respuesta`
+ * (texto de la respuesta) y `RespondidoPorEmail` no estaban en el modelo
+ * literal de SPEC.md §4.2 pero el backend los agregó como decisión de
+ * implementación necesaria, documentada en `ConsultaSocio.cs`.
+ */
+export interface ConsultaSocio {
+  id: string;
+  socioId: string;
+  socioNombre: string;
+  area: string;
+  asunto: string;
+  detalle: string;
+  adjuntoUrl?: string | null;
+  estado: EstadoConsulta;
+  fechaCreacion: string;
+  respondidoPorUsuarioId?: string | null;
+  respondidoPorEmail?: string | null;
+  respuesta?: string | null;
+  fechaRespuesta?: string | null;
+}
+
+/** Body de `POST /api/me/consultas` (§5, Portal del Socio). */
+export interface ConsultaSocioInput {
+  area: string;
+  asunto: string;
+  detalle: string;
+}
+
+/** Body de `PUT /api/consultas/{id}/responder` (§5, admin/empleado). */
+export interface ResponderConsultaInput {
+  respuesta: string;
+}
+
+/**
+ * `MeComunicacionResponse` (`GET /api/me/comunicaciones`, confirmado contra
+ * el backend real — array plano, filtrado a `Canal=Novedad`). El `id` de
+ * cada fila es el `ComunicacionDestinatario.Id` (no el de la `Comunicacion`)
+ * — es el mismo id que espera `PUT /api/me/comunicaciones/{id}/leer`. No
+ * incluye `adjuntos` (ese campo no existe en esta respuesta).
+ */
+export interface MeComunicacion {
+  id: string;
+  asunto: string;
+  descripcion?: string | null;
+  contenidoHtml: string;
+  tipoComunicacion: TipoComunicacion;
+  fechaCreacion: string;
+  fechaEnvio?: string | null;
+  fechaLectura?: string | null;
 }

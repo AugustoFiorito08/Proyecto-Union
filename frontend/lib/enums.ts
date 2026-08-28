@@ -10,10 +10,14 @@
  * y `GrupoFamiliar.cs`.
  */
 import type {
+  CanalComunicacion,
   EspacioTipo,
   EstadoActividad,
+  EstadoComunicacion,
+  EstadoConsulta,
   EstadoCuota,
   EstadoDivisionDeportiva,
+  EstadoEnvioComunicacion,
   EstadoEspacio,
   EstadoInstructor,
   EstadoPago,
@@ -22,6 +26,7 @@ import type {
   Modalidad,
   ModalidadInscripcion,
   Parentesco,
+  TipoComunicacion,
   TipoPago,
   TipoReserva,
   TipoTarifaFamiliar,
@@ -137,4 +142,42 @@ export const MEDIO_PAGO_A_INT: Record<MedioPago, number> = {
 export const TIPO_TARIFA_FAMILIAR_A_INT: Record<TipoTarifaFamiliar, number> = {
   TarifaPlanaGrupo: 1,
   SumaCategoriasIndividuales: 2,
+};
+
+/**
+ * Mapas de enum Etapa 4 (Comunicaciones y Consultas del Socio — SPEC.md
+ * §4.2/§5/§7.2). Valores confirmados contra
+ * `backend/.../Entities/{Comunicacion,ComunicacionDestinatario,ConsultaSocio}.cs`.
+ */
+export const TIPO_COMUNICACION_A_INT: Record<TipoComunicacion, number> = {
+  Novedad: 1,
+  Recordatorio: 2,
+  Cumpleanos: 3,
+  Otro: 4,
+};
+
+export const ESTADO_COMUNICACION_A_INT: Record<EstadoComunicacion, number> = {
+  Borrador: 1,
+  Programada: 2,
+  Enviada: 3,
+};
+
+// Orden confirmado contra `ComunicacionDestinatario.Canal` (§4.2): "Canal
+// (Email/WhatsApp/Novedad ...)".
+export const CANAL_COMUNICACION_A_INT: Record<CanalComunicacion, number> = {
+  Email: 1,
+  WhatsApp: 2,
+  Novedad: 3,
+};
+
+export const ESTADO_ENVIO_COMUNICACION_A_INT: Record<EstadoEnvioComunicacion, number> = {
+  Pendiente: 1,
+  Enviado: 2,
+  Fallido: 3,
+};
+
+export const ESTADO_CONSULTA_A_INT: Record<EstadoConsulta, number> = {
+  Pendiente: 1,
+  Respondida: 2,
+  Cerrada: 3,
 };

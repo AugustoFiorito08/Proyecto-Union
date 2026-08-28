@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ProyectoUnion.Application.Dtos.Consultas;
 using ProyectoUnion.Application.Dtos.Cuotas;
 using ProyectoUnion.Application.Dtos.Espacios;
 using ProyectoUnion.Application.Dtos.MePortal;
@@ -242,6 +243,131 @@ public class MePortalController : ControllerBase
             pago.CuotaId, pago.Cuota?.Periodo, pago.ReservaId, null, pago.ConceptoIngresoLibreId, null,
             pago.Concepto, pago.Fecha, pago.Importe, pago.MedioPago.ToString(), pago.Estado.ToString(),
             pago.MercadoPagoTransaccionId, pago.ComprobanteUrl));
+    }
+
+    /// <summary>
+    /// Feed de Novedades del Portal del Socio (SPEC.md §5 "GET /api/me/comunicaciones",
+    /// NUEVO-SPEC-UI). Decisión de implementación: el <c>Id</c> de
+    /// <see cref="MeComunicacionResponse"/> es el de <see cref="ComunicacionDestinatario"/>
+    /// (no el de <see cref="Comunicacion"/>) porque <see cref="ComunicacionDestinatario.FechaLectura"/>
+    /// vive ahí — es el mismo id que recibe <see cref="MarcarComunicacionLeida"/>. Solo se
+    /// listan destinatarios del canal Novedad (feed in-app; Email/WhatsApp son envíos salientes).
+    /// </summary>
+    [HttpGet("comunicaciones")]
+    public async Task<ActionResult<IReadOnlyList<MeComunicacionResponse>>> MisComunicaciones(CancellationToken cancellationToken)
+    {
+        var usuarioId = ObtenerUsuarioIdActual();
+        if (usuarioId is null)
+        {
+            return Forbid();
+        }
+
+        var destinatarios = await _dbContext.ComunicacionesDestinatarios
+            .AsNoTracking()
+            .Include(d => d.Comunicacion)
+            .Where(d => d.UsuarioId == usuarioId.Value && d.Canal == CanalComunicacion.Novedad)
+            .OrderByDescending(d => d.Comunicacion.FechaCreacion)
+            .ToListAsync(cancellationToken);
+
+        return Ok(destinatarios.Select(d => new MeComunicacionResponse(
+            d.Id,
+            d.Comunicacion.Asunto,
+            d.Comunicacion.Descripcion,
+            d.Comunicacion.ContenidoHtml,
+            d.Comunicacion.TipoComunicacion.ToString(),
+            d.Comunicacion.FechaCreacion,
+            d.FechaEnvio,
+            d.FechaLectura)).ToList());
+    }
+
+    [HttpPut("comunicaciones/{id:guid}/leer")]
+    public async Task<IActionResult> MarcarComunicacionLeida(Guid id, CancellationToken cancellationToken)
+    {
+        var usuarioId = ObtenerUsuarioIdActual();
+        if (usuarioId is null)
+        {
+            return Forbid();
+        }
+
+        var destinatario = await _dbContext.ComunicacionesDestinatarios
+            .FirstOrDefaultAsync(d => d.Id == id && d.UsuarioId == usuarioId.Value, cancellationToken);
+
+        if (destinatario is null)
+        {
+            return NotFound();
+        }
+
+        if (destinatario.FechaLectura is null)
+        {
+            destinatario.FechaLectura = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return NoContent();
+    }
+
+    [HttpGet("consultas")]
+    public async Task<ActionResult<IReadOnlyList<ConsultaSocioResponse>>> MisConsultas(CancellationToken cancellationToken)
+    {
+        var socio = await ResolverSocioActualAsync(cancellationToken);
+        if (socio is null)
+        {
+            return Forbid();
+        }
+
+        var consultas = await _dbContext.ConsultasSocio
+            .AsNoTracking()
+            .Include(c => c.RespondidoPorUsuario)
+            .Where(c => c.SocioId == socio.Id)
+            .OrderByDescending(c => c.FechaCreacion)
+            .ToListAsync(cancellationToken);
+
+        return Ok(consultas.Select(c => new ConsultaSocioResponse(
+            c.Id, c.SocioId, $"{socio.Apellido}, {socio.Nombres}", c.Area, c.Asunto, c.Detalle, c.AdjuntoUrl,
+            c.Estado.ToString(), c.FechaCreacion, c.RespondidoPorUsuarioId, c.RespondidoPorUsuario?.Email,
+            c.FechaRespuesta, c.Respuesta)).ToList());
+    }
+
+    [HttpPost("consultas")]
+    public async Task<ActionResult<ConsultaSocioResponse>> CrearConsulta([FromBody] CrearConsultaRequest request, CancellationToken cancellationToken)
+    {
+        var socio = await ResolverSocioActualAsync(cancellationToken);
+        if (socio is null)
+        {
+            return Forbid();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Area) || string.IsNullOrWhiteSpace(request.Asunto) || string.IsNullOrWhiteSpace(request.Detalle))
+        {
+            return BadRequest(new { message = "Area, Asunto y Detalle son obligatorios." });
+        }
+
+        var consulta = new ConsultaSocio
+        {
+            Id = Guid.NewGuid(),
+            SocioId = socio.Id,
+            Area = request.Area,
+            Asunto = request.Asunto,
+            Detalle = request.Detalle,
+            AdjuntoUrl = request.AdjuntoUrl,
+            Estado = EstadoConsulta.Pendiente,
+            FechaCreacion = DateTime.UtcNow
+        };
+
+        _dbContext.ConsultasSocio.Add(consulta);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var response = new ConsultaSocioResponse(
+            consulta.Id, consulta.SocioId, $"{socio.Apellido}, {socio.Nombres}", consulta.Area, consulta.Asunto,
+            consulta.Detalle, consulta.AdjuntoUrl, consulta.Estado.ToString(), consulta.FechaCreacion, null, null, null, null);
+
+        return CreatedAtAction(nameof(MisConsultas), response);
+    }
+
+    private Guid? ObtenerUsuarioIdActual()
+    {
+        var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(usuarioId, out var guid) ? guid : null;
     }
 
     private async Task<Socio?> ResolverSocioActualAsync(CancellationToken cancellationToken)

@@ -72,6 +72,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
 
     public DbSet<ConceptoIngresoLibre> ConceptosIngresoLibre => Set<ConceptoIngresoLibre>();
 
+    public DbSet<Comunicacion> Comunicaciones => Set<Comunicacion>();
+
+    public DbSet<ComunicacionDestinatario> ComunicacionesDestinatarios => Set<ComunicacionDestinatario>();
+
+    public DbSet<ComunicacionAdjunto> ComunicacionesAdjuntos => Set<ComunicacionAdjunto>();
+
+    public DbSet<ConsultaSocio> ConsultasSocio => Set<ConsultaSocio>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

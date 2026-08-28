@@ -408,6 +408,119 @@ namespace ProyectoUnion.Infrastructure.Persistence.Migrations
                     b.ToTable("CoberturasMedicas");
                 });
 
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.Comunicacion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Asunto")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("ContenidoHtml")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CreadoPorUsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaProgramada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaUltimoEnvio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TipoComunicacion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreadoPorUsuarioId");
+
+                    b.HasIndex("Estado");
+
+                    b.HasIndex("FechaProgramada");
+
+                    b.ToTable("Comunicaciones");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ComunicacionAdjunto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArchivoUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ComunicacionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComunicacionId");
+
+                    b.ToTable("ComunicacionesAdjuntos");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ComunicacionDestinatario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Canal")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ComunicacionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("EstadoEnvio")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FechaEnvio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaLectura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MotivoFallo")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComunicacionId");
+
+                    b.HasIndex("EstadoEnvio");
+
+                    b.HasIndex("UsuarioId", "Canal");
+
+                    b.ToTable("ComunicacionesDestinatarios");
+                });
+
             modelBuilder.Entity("ProyectoUnion.Domain.Entities.ConceptoIngresoLibre", b =>
                 {
                     b.Property<Guid>("Id")
@@ -449,6 +562,59 @@ namespace ProyectoUnion.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ConfiguracionesGenerales");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ConsultaSocio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdjuntoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Area")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Asunto")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Detalle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaRespuesta")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RespondidoPorUsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Respuesta")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SocioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado");
+
+                    b.HasIndex("RespondidoPorUsuarioId");
+
+                    b.HasIndex("SocioId");
+
+                    b.ToTable("ConsultasSocio");
                 });
 
             modelBuilder.Entity("ProyectoUnion.Domain.Entities.Cuota", b =>
@@ -1316,6 +1482,65 @@ namespace ProyectoUnion.Infrastructure.Persistence.Migrations
                     b.Navigation("Rol");
                 });
 
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.Comunicacion", b =>
+                {
+                    b.HasOne("ProyectoUnion.Domain.Entities.ApplicationUser", "CreadoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("CreadoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreadoPorUsuario");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ComunicacionAdjunto", b =>
+                {
+                    b.HasOne("ProyectoUnion.Domain.Entities.Comunicacion", "Comunicacion")
+                        .WithMany("Adjuntos")
+                        .HasForeignKey("ComunicacionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comunicacion");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ComunicacionDestinatario", b =>
+                {
+                    b.HasOne("ProyectoUnion.Domain.Entities.Comunicacion", "Comunicacion")
+                        .WithMany("Destinatarios")
+                        .HasForeignKey("ComunicacionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProyectoUnion.Domain.Entities.ApplicationUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Comunicacion");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.ConsultaSocio", b =>
+                {
+                    b.HasOne("ProyectoUnion.Domain.Entities.ApplicationUser", "RespondidoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("RespondidoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ProyectoUnion.Domain.Entities.Socio", "Socio")
+                        .WithMany()
+                        .HasForeignKey("SocioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RespondidoPorUsuario");
+
+                    b.Navigation("Socio");
+                });
+
             modelBuilder.Entity("ProyectoUnion.Domain.Entities.Cuota", b =>
                 {
                     b.HasOne("ProyectoUnion.Domain.Entities.GrupoFamiliar", "GrupoFamiliar")
@@ -1612,6 +1837,13 @@ namespace ProyectoUnion.Infrastructure.Persistence.Migrations
                     b.Navigation("Planes");
 
                     b.Navigation("Socios");
+                });
+
+            modelBuilder.Entity("ProyectoUnion.Domain.Entities.Comunicacion", b =>
+                {
+                    b.Navigation("Adjuntos");
+
+                    b.Navigation("Destinatarios");
                 });
 
             modelBuilder.Entity("ProyectoUnion.Domain.Entities.ConceptoIngresoLibre", b =>

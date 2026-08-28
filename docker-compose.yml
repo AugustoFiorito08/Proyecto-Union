@@ -41,6 +41,14 @@ services:
       Minio__Endpoint: "http://minio:9000"
       MercadoPago__AccessToken: ""
       MercadoPago__WebhookSecret: ""
+      AppBaseUrl: "http://localhost:5000"
+      Email__Smtp__Host: ""
+      Email__Smtp__Port: "587"
+      Email__Smtp__User: ""
+      Email__Smtp__Password: ""
+      Email__Smtp__From: ""
+      WhatsApp__AccessToken: ""
+      WhatsApp__PhoneNumberId: ""
     ports:
       - "5000:5000"
     volumes:

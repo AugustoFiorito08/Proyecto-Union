@@ -24,6 +24,16 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   // Cuota / Pago (Etapa 3, SPEC.md §4.2) — "Pagada"/"Vencida"/"Rechazada" ya cubiertos arriba.
   Pendiente: "secondary",
   PendienteReembolso: "outline",
+  // Comunicacion (Etapa 4) — "Pendiente" ya cubierto arriba.
+  Borrador: "secondary",
+  Programada: "outline",
+  Enviada: "default",
+  // ComunicacionDestinatario.EstadoEnvio (Etapa 4)
+  Enviado: "default",
+  Fallido: "destructive",
+  // ConsultaSocio.Estado (Etapa 4) — "Pendiente" ya cubierto arriba.
+  Respondida: "default",
+  Cerrada: "secondary",
 };
 
 interface StatusBadgeProps {

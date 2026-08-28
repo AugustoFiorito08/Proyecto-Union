@@ -81,4 +81,45 @@ export async function apiFetchRaw(path: string, init?: RequestInit): Promise<Res
   return response;
 }
 
+/**
+ * Variante de `apiFetch` para bodies `multipart/form-data` (ej.
+ * `POST /api/comunicaciones/{id}/adjuntos`, Etapa 4 — hasta ahora ningún
+ * endpoint del frontend subía archivos binarios). A diferencia de `apiFetch`,
+ * NO fuerza `Content-Type: application/json` — con un body `FormData`, fetch
+ * (Node/undici) arma el header `multipart/form-data; boundary=...` solo si no
+ * se lo pisamos manualmente.
+ */
+export async function apiFetchForm<T>(path: string, formData: FormData): Promise<T> {
+  const token = await getSessionToken();
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token ?? ""}`,
+      },
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error(`[apiFetchForm] No se pudo contactar la API .NET (${path}):`, error);
+    throw new Error("No se pudo conectar con el servidor. Intentá nuevamente más tarde.");
+  }
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const message =
+      (data as { message?: string } | null)?.message ??
+      `Error ${response.status} al comunicarse con el servidor.`;
+    throw new ApiError(message, response.status);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
 export { API_BASE_URL };

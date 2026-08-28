@@ -126,7 +126,17 @@ public static class DbSeeder
         ("conceptos-ingreso-libre.baja", "Baja de conceptos de ingreso libre.", "Finanzas"),
 
         ("configuracion.general.leer", "Consulta de la Configuración General del sistema.", "Configuracion"),
-        ("configuracion.general.editar", "Edición de la Configuración General del sistema.", "Configuracion")
+        ("configuracion.general.editar", "Edición de la Configuración General del sistema.", "Configuracion"),
+
+        // ---- Etapa 4 ----
+        ("comunicaciones.crear", "Alta de comunicaciones (borrador).", "Comunicaciones"),
+        ("comunicaciones.leer", "Consulta de comunicaciones y su trazabilidad.", "Comunicaciones"),
+        ("comunicaciones.editar", "Edición, envío, programación y adjuntos de comunicaciones.", "Comunicaciones"),
+        ("comunicaciones.baja", "Eliminación de comunicaciones en Borrador.", "Comunicaciones"),
+
+        ("consultas.crear", "Alta de consultas de socios (uso interno/backoffice).", "Consultas"),
+        ("consultas.leer", "Consulta de las consultas de socios.", "Consultas"),
+        ("consultas.editar", "Responder consultas de socios.", "Consultas")
     ];
 
     // ---- Etapa 1: RolPermiso — SPEC.md §2.2 ----
@@ -199,6 +209,26 @@ public static class DbSeeder
     private static readonly string[] PermisosConfiguracionGeneralSoloSuperAdmin =
     [
         "configuracion.general.leer", "configuracion.general.editar"
+    ];
+
+    // ---- Etapa 4: RolPermiso — enunciado de la tarea (matriz §2.2 fila "Comunicaciones":
+    // SuperAdmin/Administrador CLMB, Empleado/Secretaría "CLM sin eliminar"). "Consultas del
+    // Socio" es NUEVO-SPEC-UI, sin fila propia en la matriz original — se le da CLM a los 3
+    // roles de staff por igual (SuperAdmin/Administrador/Empleado), consistente con el
+    // enunciado ("consultas.* (staff CLM...)"), sin distinguir jerarquía como en Comunicaciones.
+    private static readonly string[] PermisosComunicacionesCLMBCompleto =
+    [
+        "comunicaciones.crear", "comunicaciones.leer", "comunicaciones.editar", "comunicaciones.baja"
+    ];
+
+    private static readonly string[] PermisosComunicacionesEmpleadoSecretaria =
+    [
+        "comunicaciones.crear", "comunicaciones.leer", "comunicaciones.editar"
+    ];
+
+    private static readonly string[] PermisosConsultasStaff =
+    [
+        "consultas.crear", "consultas.leer", "consultas.editar"
     ];
 
     public static async Task SeedAsync(IServiceProvider serviceProvider)
@@ -430,14 +460,20 @@ public static class DbSeeder
                 .Concat(PermisosActividadesEspaciosReservasCLMBCompleto)
                 .Concat(PermisosFinanzasCLMBCompleto)
                 .Concat(PermisosConfiguracionGeneralSoloSuperAdmin)
+                .Concat(PermisosComunicacionesCLMBCompleto)
+                .Concat(PermisosConsultasStaff)
                 .ToArray()),
             ("Administrador", PermisosCLMBCompleto
                 .Concat(PermisosActividadesEspaciosReservasCLMBCompleto)
                 .Concat(PermisosFinanzasCLMBCompleto)
+                .Concat(PermisosComunicacionesCLMBCompleto)
+                .Concat(PermisosConsultasStaff)
                 .ToArray()),
             ("EmpleadoSecretaria", PermisosEmpleadoSecretaria
                 .Concat(PermisosEmpleadoSecretariaEtapa2)
                 .Concat(PermisosFinanzasEmpleadoSecretaria)
+                .Concat(PermisosComunicacionesEmpleadoSecretaria)
+                .Concat(PermisosConsultasStaff)
                 .ToArray())
         };
 

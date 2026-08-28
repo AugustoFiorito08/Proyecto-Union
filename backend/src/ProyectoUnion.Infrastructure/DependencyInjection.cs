@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProyectoUnion.Application.Interfaces;
 using ProyectoUnion.Domain.Entities;
+using ProyectoUnion.Infrastructure.Comunicaciones;
 using ProyectoUnion.Infrastructure.Finanzas;
 using ProyectoUnion.Infrastructure.Identity;
 using ProyectoUnion.Infrastructure.MercadoPago;
@@ -92,6 +93,13 @@ public static class DependencyInjection
         services.AddScoped<IMoraSuspensionService, MoraSuspensionService>();
         services.AddScoped<IMercadoPagoClient, MercadoPagoClient>();
         services.AddScoped<IComprobantePdfGenerator, ComprobantePdfGenerator>();
+
+        // ---- Etapa 4: Comunicaciones ----
+        services.AddScoped<IEmailSender, EmailSender>();
+        services.AddHttpClient<IWhatsAppSender, WhatsAppSender>();
+        services.AddScoped<IComunicacionService, ComunicacionService>();
+        services.AddScoped<ICumpleanosService, CumpleanosService>();
+        services.AddScoped<IRecordatorioVencimientoService, RecordatorioVencimientoService>();
 
         return services;
     }

@@ -15,13 +15,15 @@ import {
   LineChart,
   SlidersHorizontal,
   Tags,
+  Mail,
+  MessageCircleQuestion,
 } from "lucide-react";
 
-// Navegación de Etapa 1 + Etapa 2 parte 1 + Etapa 3 (Finanzas, SPEC.md §7.1,
-// route group `(dashboard)`). Los módulos de etapas futuras (Comunicaciones,
-// Control de Acceso, Solicitudes de Membresía) no se listan todavía — se
-// agregan a medida que se implementan sus rutas, para no mostrar ítems que
-// hoy darían 404.
+// Navegación de Etapa 1 + Etapa 2 parte 1 + Etapa 3 (Finanzas) + Etapa 4
+// (Comunicaciones, SPEC.md §7.1, route group `(dashboard)`). Los módulos de
+// etapas futuras (Control de Acceso, Solicitudes de Membresía) no se listan
+// todavía — se agregan a medida que se implementan sus rutas, para no
+// mostrar ítems que hoy darían 404.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/socios", label: "Socios", icon: Users },
@@ -32,6 +34,8 @@ const NAV_ITEMS = [
   { href: "/reservas", label: "Reservas", icon: CalendarClock },
   { href: "/pagos", label: "Pagos", icon: Receipt },
   { href: "/finanzas/dashboard", label: "Finanzas", icon: LineChart },
+  { href: "/comunicaciones", label: "Comunicaciones", icon: Mail },
+  { href: "/consultas", label: "Consultas del Socio", icon: MessageCircleQuestion },
 ] as const;
 
 const CONFIG_ITEMS = [

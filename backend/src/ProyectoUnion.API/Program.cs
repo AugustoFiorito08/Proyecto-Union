@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using ProyectoUnion.API.Middleware;
 using ProyectoUnion.Application.Validators;
 using ProyectoUnion.Infrastructure;
+using ProyectoUnion.Infrastructure.Comunicaciones;
 using ProyectoUnion.Infrastructure.Finanzas;
 using ProyectoUnion.Infrastructure.Identity;
 using ProyectoUnion.Infrastructure.Persistence;
@@ -70,6 +71,11 @@ builder.Services.AddCors(options =>
 
 // ---- Job diario de suspensión por mora (RN-FIN-02, SPEC.md §3.2, Etapa 3) ----
 builder.Services.AddHostedService<MoraSuspensionHostedService>();
+
+// ---- Jobs de Comunicaciones (RF-COM-24/26, SPEC.md §6 Etapa 4) ----
+builder.Services.AddHostedService<CumpleanosHostedService>();
+builder.Services.AddHostedService<RecordatorioVencimientoHostedService>();
+builder.Services.AddHostedService<ComunicacionProgramadaHostedService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

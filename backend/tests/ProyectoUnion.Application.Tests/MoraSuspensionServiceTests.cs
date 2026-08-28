@@ -1,10 +1,12 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using ProyectoUnion.Application.Tests.Fakes;
 using ProyectoUnion.Domain.Entities;
 using ProyectoUnion.Infrastructure.Finanzas;
 using ProyectoUnion.Infrastructure.Persistence;
 using Xunit;
+using static ProyectoUnion.Application.Tests.Fakes.ComunicacionServiceTestHelpers;
 
 namespace ProyectoUnion.Application.Tests;
 
@@ -49,7 +51,7 @@ public class MoraSuspensionServiceTests
 
         await dbContext.SaveChangesAsync();
 
-        var servicio = new MoraSuspensionService(dbContext);
+        var servicio = new MoraSuspensionService(dbContext, CrearComunicacionServiceFake(dbContext));
         var suspendidos = await servicio.ProcesarSuspensionesAsync(CancellationToken.None);
 
         suspendidos.Should().Be(1);
@@ -90,7 +92,7 @@ public class MoraSuspensionServiceTests
 
         await dbContext.SaveChangesAsync();
 
-        var servicio = new MoraSuspensionService(dbContext);
+        var servicio = new MoraSuspensionService(dbContext, CrearComunicacionServiceFake(dbContext));
         var suspendidos = await servicio.ProcesarSuspensionesAsync(CancellationToken.None);
 
         suspendidos.Should().Be(0);
@@ -131,7 +133,7 @@ public class MoraSuspensionServiceTests
 
         await dbContext.SaveChangesAsync();
 
-        var servicio = new MoraSuspensionService(dbContext);
+        var servicio = new MoraSuspensionService(dbContext, CrearComunicacionServiceFake(dbContext));
         var suspendidos = await servicio.ProcesarSuspensionesAsync(CancellationToken.None);
 
         suspendidos.Should().Be(0);

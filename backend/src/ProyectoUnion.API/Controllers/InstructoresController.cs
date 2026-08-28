@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.Instructores;
+using ProyectoUnion.Application.Interfaces;
 using ProyectoUnion.Application.Security;
 using ProyectoUnion.Domain.Entities;
 using ProyectoUnion.Infrastructure.Persistence;
@@ -25,15 +27,21 @@ public class InstructoresController : ControllerBase
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<InstructoresController> _logger;
 
     public InstructoresController(
         ApplicationDbContext dbContext,
         UserManager<ApplicationUser> userManager,
-        RoleManager<ApplicationRole> roleManager)
+        RoleManager<ApplicationRole> roleManager,
+        IEmailSender emailSender,
+        ILogger<InstructoresController> logger)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _roleManager = roleManager;
+        _emailSender = emailSender;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -145,9 +153,25 @@ public class InstructoresController : ControllerBase
         _dbContext.Instructores.Add(instructor);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // TODO(Etapa 4): enviar la contraseña temporal por email en vez de exponerla en la
-        // respuesta (mismo patrón pendiente que AuthController.ForgotPassword).
-        var response = new InstructorCreadoResponse(MapearAResponse(instructor), passwordTemporal);
+        // Etapa 4: la contraseña temporal se envía por email (cerrado el TODO de Etapa 2);
+        // solo viaja en la respuesta como fallback de emergencia si el envío falla.
+        var contenido =
+            $"<p>Se creó tu acceso al Portal del Instructor del Club Atlético Unión.</p>" +
+            $"<p>Usuario: <strong>{instructor.Email}</strong><br/>Contraseña temporal: <strong>{passwordTemporal}</strong></p>" +
+            $"<p>Te recomendamos cambiarla la primera vez que ingreses.</p>";
+
+        var passwordEnviadaPorEmail = true;
+        try
+        {
+            await _emailSender.EnviarAsync(instructor.Email, "Acceso al Portal del Instructor", contenido, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            passwordEnviadaPorEmail = false;
+            _logger.LogWarning(ex, "No se pudo enviar la contraseña temporal por email (proveedor no configurado).");
+        }
+
+        var response = new InstructorCreadoResponse(MapearAResponse(instructor), passwordEnviadaPorEmail, passwordEnviadaPorEmail ? null : passwordTemporal);
         return CreatedAtAction(nameof(Obtener), new { id = instructor.Id }, response);
     }
 

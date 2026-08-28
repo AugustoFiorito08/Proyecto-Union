@@ -8,15 +8,19 @@ namespace ProyectoUnion.Infrastructure.Finanzas;
 /// <summary>
 /// Implementación de <see cref="IMoraSuspensionService"/> (RN-FIN-02, SPEC.md §3.2). No
 /// reactiva automáticamente — la reactivación es manual (RN-SOC-01, §3.3,
-/// SociosController.Reactivar, ya implementado en Etapa 1).
+/// SociosController.Reactivar, ya implementado en Etapa 1). Etapa 4: al suspender, notifica
+/// al socio (RF-COM-26/RN-FIN-02, cierre del gap dejado pendiente en Etapa 3 — ver SPEC.md
+/// §6 nota de Etapa 3) vía <see cref="IComunicacionService.CrearYEnviarASocioAsync"/>.
 /// </summary>
 public class MoraSuspensionService : IMoraSuspensionService
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IComunicacionService _comunicacionService;
 
-    public MoraSuspensionService(ApplicationDbContext dbContext)
+    public MoraSuspensionService(ApplicationDbContext dbContext, IComunicacionService comunicacionService)
     {
         _dbContext = dbContext;
+        _comunicacionService = comunicacionService;
     }
 
     public async Task<int> ProcesarSuspensionesAsync(CancellationToken cancellationToken)
@@ -86,6 +90,22 @@ public class MoraSuspensionService : IMoraSuspensionService
         if (socios.Count > 0)
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            foreach (var socio in socios)
+            {
+                var contenido = "<p>Te informamos que tu membresía fue suspendida automáticamente por mora " +
+                                 "(deuda superior al máximo tolerado). Para reactivarla, regularizá tu deuda y " +
+                                 "contactate con Secretaría.</p>";
+
+                await _comunicacionService.CrearYEnviarASocioAsync(
+                    socio.Id,
+                    "Suspensión de membresía por mora",
+                    contenido,
+                    TipoComunicacion.Otro,
+                    [CanalComunicacion.Email, CanalComunicacion.Novedad],
+                    creadoPorUsuarioId: null,
+                    cancellationToken);
+            }
         }
 
         return socios.Count;

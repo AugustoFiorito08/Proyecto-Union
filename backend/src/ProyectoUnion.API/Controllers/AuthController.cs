@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProyectoUnion.Application.Dtos.Auth;
 using ProyectoUnion.Application.Interfaces;
 using ProyectoUnion.Domain.Entities;
@@ -18,17 +19,23 @@ public class AuthController : ControllerBase
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ApplicationDbContext _dbContext;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         IJwtTokenService jwtTokenService,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        IEmailSender emailSender,
+        ILogger<AuthController> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _jwtTokenService = jwtTokenService;
         _dbContext = dbContext;
+        _emailSender = emailSender;
+        _logger = logger;
     }
 
     [HttpPost("login")]
@@ -95,21 +102,39 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
+        // Mensaje de respuesta idéntico en todos los casos (exista o no el email, falle o no
+        // el envío) — bug real encontrado en la reconciliación de Etapa 4: antes devolvía dos
+        // textos distintos según la rama, lo que igual permitía enumerar cuentas por email
+        // aunque la intención (documentada en el comentario) fuera evitarlo.
+        const string mensajeGenerico = "Si el email existe, se envió un código de recuperación.";
+
         var usuario = await _userManager.FindByEmailAsync(request.Email);
         if (usuario is null)
         {
-            // No se revela si el email existe o no, para no facilitar enumeración de cuentas.
-            return Ok(new { message = "Si el email existe, se generó un token de recuperación." });
+            return Ok(new { message = mensajeGenerico });
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(usuario);
 
-        // TODO(Etapa 4 - Comunicaciones): en Etapa 0 no hay proveedor de email configurado.
-        // El token se devuelve directamente en la respuesta (y se loguea) únicamente para
-        // poder probar el flujo end-to-end en desarrollo. Cuando se integre el módulo de
-        // Comunicaciones (Email/WhatsApp), este endpoint debe enviar el token por email y
-        // dejar de exponerlo en el body de la respuesta.
-        return Ok(new { message = "Token de recuperación generado.", resetToken = token });
+        // Etapa 4: el token se envía por email en vez de devolverse en la respuesta (cerrado
+        // el TODO de Etapa 0). No se revela si el envío falló — la respuesta es siempre la
+        // misma genérica, por seguridad (no facilitar enumeración de cuentas ni delatar
+        // problemas de configuración del proveedor de email a un llamante anónimo).
+        var contenido =
+            $"<p>Recibimos una solicitud para restablecer tu contraseña.</p>" +
+            $"<p>Código de recuperación: <strong>{token}</strong></p>" +
+            $"<p>Si no solicitaste este cambio, podés ignorar este mensaje.</p>";
+
+        try
+        {
+            await _emailSender.EnviarAsync(usuario.Email!, "Recuperación de contraseña", contenido);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "No se pudo enviar el email de recuperación de contraseña (proveedor no configurado).");
+        }
+
+        return Ok(new { message = mensajeGenerico });
     }
 
     [HttpPost("reset-password")]

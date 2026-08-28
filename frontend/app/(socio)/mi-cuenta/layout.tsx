@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, Wallet } from "lucide-react";
+import { CalendarClock, Mail, Wallet } from "lucide-react";
 
 import { getSessionToken, getSessionRole } from "@/lib/auth";
 import { decodeJwtPayload, type SessionClaims } from "@/lib/jwt";
@@ -8,15 +8,17 @@ import { LogoutButton } from "@/components/logout-button";
 const NAV_ITEMS = [
   { href: "/mi-cuenta/reservas", label: "Mis reservas", icon: CalendarClock },
   { href: "/mi-cuenta/pagos", label: "Estado de cuenta", icon: Wallet },
+  { href: "/mi-cuenta/comunicaciones", label: "Comunicaciones", icon: Mail },
 ] as const;
 
 /**
  * Layout real del Portal del Socio (SPEC.md §7.1, base `/mi-cuenta`).
  * `proxy.ts` ya garantiza que solo el rol `Socio` llega hasta acá. Etapa 2
- * (parte 2) implementó Reservas; Etapa 3 agrega Pagos (`/mi-cuenta/pagos`)
- * al mismo sidebar reducido — el resto de rutas de `/mi-cuenta` listadas en
- * SPEC.md §7.1 (perfil, actividades, comunicaciones, configuración) siguen
- * fuera de alcance, así que no se listan (evita ítems que hoy darían 404).
+ * (parte 2) implementó Reservas; Etapa 3 agregó Pagos (`/mi-cuenta/pagos`);
+ * Etapa 4 agrega Comunicaciones (`/mi-cuenta/comunicaciones` — novedades +
+ * consultas) al mismo sidebar reducido — el resto de rutas de `/mi-cuenta`
+ * listadas en SPEC.md §7.1 (perfil, actividades, configuración) siguen fuera
+ * de alcance, así que no se listan (evita ítems que hoy darían 404).
  */
 export default async function MiCuentaLayout({ children }: LayoutProps<"/">) {
   const [token, rol] = await Promise.all([getSessionToken(), getSessionRole()]);

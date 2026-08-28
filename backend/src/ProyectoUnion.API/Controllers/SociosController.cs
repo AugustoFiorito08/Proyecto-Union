@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProyectoUnion.Application.Dtos.Common;
 using ProyectoUnion.Application.Dtos.Socios;
 using ProyectoUnion.Application.Interfaces;
@@ -29,19 +30,25 @@ public class SociosController : ControllerBase
     private readonly ICarnetPdfGenerator _carnetPdfGenerator;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<SociosController> _logger;
 
     public SociosController(
         ApplicationDbContext dbContext,
         IQrCodeGenerator qrCodeGenerator,
         ICarnetPdfGenerator carnetPdfGenerator,
         UserManager<ApplicationUser> userManager,
-        RoleManager<ApplicationRole> roleManager)
+        RoleManager<ApplicationRole> roleManager,
+        IEmailSender emailSender,
+        ILogger<SociosController> logger)
     {
         _dbContext = dbContext;
         _qrCodeGenerator = qrCodeGenerator;
         _carnetPdfGenerator = carnetPdfGenerator;
         _userManager = userManager;
         _roleManager = roleManager;
+        _emailSender = emailSender;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -424,9 +431,37 @@ public class SociosController : ControllerBase
         socio.FechaUltimaModificacion = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // TODO(Etapa 4): enviar la contraseña temporal por email en vez de exponerla en la
-        // respuesta (mismo patrón pendiente que AuthController.ForgotPassword).
-        return Ok(new CrearAccesoResponse(usuario.Id, passwordTemporal));
+        // Etapa 4: la contraseña temporal se envía por email (cerrado el TODO de Etapa 2);
+        // solo viaja en la respuesta como fallback de emergencia si el envío falla (por
+        // ejemplo, SMTP no configurado en este entorno), para no dejar al socio sin forma de
+        // acceder a su cuenta recién creada.
+        var passwordEnviadaPorEmail = await IntentarEnviarPasswordTemporalAsync(socio.Email, passwordTemporal, cancellationToken);
+
+        return Ok(new CrearAccesoResponse(usuario.Id, passwordEnviadaPorEmail, passwordEnviadaPorEmail ? null : passwordTemporal));
+    }
+
+    /// <summary>
+    /// Envía la contraseña temporal por email (Etapa 4). Devuelve false —sin propagar la
+    /// excepción— si el proveedor de email no está configurado, para que el caller pueda
+    /// caer al fallback de mostrarla en la respuesta.
+    /// </summary>
+    private async Task<bool> IntentarEnviarPasswordTemporalAsync(string email, string passwordTemporal, CancellationToken cancellationToken)
+    {
+        var contenido =
+            $"<p>Se creó tu acceso al Portal del Socio del Club Atlético Unión.</p>" +
+            $"<p>Usuario: <strong>{email}</strong><br/>Contraseña temporal: <strong>{passwordTemporal}</strong></p>" +
+            $"<p>Te recomendamos cambiarla la primera vez que ingreses.</p>";
+
+        try
+        {
+            await _emailSender.EnviarAsync(email, "Acceso al Portal del Socio", contenido, cancellationToken);
+            return true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "No se pudo enviar la contraseña temporal por email (proveedor no configurado).");
+            return false;
+        }
     }
 
     private Task<Socio?> ObtenerSocioConIncludes(Guid id, CancellationToken cancellationToken) =>

@@ -21,15 +21,18 @@ interface CrearAccesoDialogProps {
 
 /**
  * Otorga acceso al Portal del Socio (prerrequisito de Etapa 2, no autogestión
- * — ver `actions.ts`). La contraseña temporal se muestra una única vez acá;
- * TODO(Etapa 4): enviarla por email en vez de mostrarla en pantalla, mismo
- * pendiente que ya tienen `AuthController.ForgotPassword` e Instructores.
+ * — ver `actions.ts`). Etapa 4 cerró el TODO pendiente: la contraseña
+ * temporal se envía por email real; solo se muestra en pantalla como
+ * fallback si ese envío falla (`passwordEnviadaPorEmail === false`).
  */
 export function CrearAccesoDialog({ socioId }: CrearAccesoDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [passwordTemporal, setPasswordTemporal] = useState<string | null>(null);
+  const [resultado, setResultado] = useState<{
+    passwordEnviadaPorEmail: boolean;
+    passwordTemporal?: string | null;
+  } | null>(null);
 
   function handleCrearAcceso() {
     setError(null);
@@ -39,7 +42,7 @@ export function CrearAccesoDialog({ socioId }: CrearAccesoDialogProps) {
         setError(result.message);
         return;
       }
-      setPasswordTemporal(result.data.passwordTemporal);
+      setResultado(result.data);
     });
   }
 
@@ -50,7 +53,7 @@ export function CrearAccesoDialog({ socioId }: CrearAccesoDialogProps) {
         setOpen(nextOpen);
         if (nextOpen) {
           setError(null);
-          setPasswordTemporal(null);
+          setResultado(null);
         }
       }}
     >
@@ -63,17 +66,26 @@ export function CrearAccesoDialog({ socioId }: CrearAccesoDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {passwordTemporal ? (
-          <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
-            <p className="text-sm">
-              Cuenta creada. Contraseña temporal (comunicala manualmente, no se vuelve a mostrar):
-            </p>
-            <p className="font-mono text-sm font-semibold">{passwordTemporal}</p>
-          </div>
+        {resultado ? (
+          resultado.passwordEnviadaPorEmail ? (
+            <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
+              <p className="text-sm">
+                Cuenta creada. Se envió la contraseña temporal al email del socio.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
+              <p className="text-sm text-destructive">
+                Cuenta creada, pero el envío de email falló. Comunicá esta contraseña temporal
+                manualmente (no se vuelve a mostrar):
+              </p>
+              <p className="font-mono text-sm font-semibold">{resultado.passwordTemporal}</p>
+            </div>
+          )
         ) : (
           <p className="text-sm text-muted-foreground">
-            Se genera una contraseña temporal que tenés que comunicarle al socio vos mismo — el
-            envío automático por email llega en Etapa 4.
+            Se genera una contraseña temporal y se le envía al socio por email. Si el envío
+            falla, se te va a mostrar acá para que se la comuniques vos mismo.
           </p>
         )}
 
@@ -83,7 +95,7 @@ export function CrearAccesoDialog({ socioId }: CrearAccesoDialogProps) {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cerrar
           </Button>
-          {!passwordTemporal ? (
+          {!resultado ? (
             <Button onClick={handleCrearAcceso} disabled={isPending}>
               {isPending ? "Creando..." : "Crear acceso"}
             </Button>
