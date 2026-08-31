@@ -10,14 +10,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { LogoCau } from "@/components/logo-cau";
 
 const loginSchema = z.object({
@@ -66,53 +58,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      {/* Panel partido del diseño de Figma: identidad del club a la izquierda,
-          formulario a la derecha. En mobile el panel verde se oculta y queda
-          solo el formulario, con el escudo arriba (ver `<CardHeader>`). */}
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-xl bg-card shadow-sm md:grid-cols-2">
-        <aside className="relative hidden flex-col items-center justify-center gap-1 overflow-hidden bg-[#0E663B] p-10 text-center text-white md:flex">
-          {/* Escudo grande de marca de agua, detrás del logo principal. */}
-          <LogoCau
-            variant="monocromo"
-            className="pointer-events-none absolute inset-0 m-auto size-[115%] opacity-[0.06]"
-            aria-hidden="true"
-          />
-          <LogoCau className="relative size-40 drop-shadow-sm" />
-          <h1 className="relative mt-5 font-heading text-2xl font-bold uppercase tracking-tight">
+    /* El login comparte el fondo verde profundo, la tipografía y la forma de
+       los botones de la landing: quien entra tiene que sentir que cruza la
+       puerta del mismo club, no que aterrizó en un formulario cualquiera. A
+       diferencia del resto de la app, fija su paleta explícitamente (es una
+       pantalla de marca, no debe cambiar con el tema del sistema). */
+    /* Corte duro entre los dos campos de color en vez de una tarjeta flotando
+       sobre el fondo: se lee como una puerta, no como un widget. En pantallas
+       chicas el mismo corte rota — banda verde con la identidad arriba,
+       formulario abajo — para que el escudo nunca desaparezca. */
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* ---------- Identidad ---------- */}
+      <aside className="flex flex-col items-center justify-center gap-5 bg-[#062A19] px-6 py-10 text-center lg:w-[45%] lg:gap-6 lg:py-12">
+        <LogoCau className="size-20 lg:size-44" />
+        <div>
+          <h2 className="font-display text-xl uppercase leading-tight tracking-tight text-white lg:text-3xl">
             Club Atlético Unión
-          </h1>
-          <p className="relative text-xs font-medium uppercase tracking-[0.18em] text-white/75">
+          </h2>
+          <div className="mx-auto mt-4 h-px w-16 bg-white/25 lg:mt-5" />
+          <p className="mt-4 font-condensed text-xs font-semibold uppercase tracking-[0.32em] text-[#4FD98A] lg:mt-5 lg:text-sm">
             Pasión · Compromiso · Familia
           </p>
-        </aside>
+        </div>
+      </aside>
 
-        <Card className="rounded-none border-0 bg-transparent shadow-none">
-          <CardHeader className="items-center text-center">
-            <LogoCau className="mx-auto mb-2 size-14 md:hidden" />
-            <CardTitle className="text-2xl">Bienvenido</CardTitle>
-            <CardDescription>Iniciá sesión para continuar</CardDescription>
-          </CardHeader>
+      {/* ---------- Formulario ---------- */}
+      <main className="flex flex-1 items-center justify-center bg-[#F2F5F1] px-6 py-12 sm:px-10">
+        <div className="w-full max-w-md">
+          <h1 className="font-display text-3xl uppercase leading-tight tracking-tight text-[#062A19]">
+            Ingresá al club
+          </h1>
+          <p className="mt-2 text-[#062A19]/60">Acceso para socios y staff.</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <CardContent className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 space-y-5">
             {serverError ? (
               <p
                 role="alert"
-                className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                className="rounded-xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
               >
                 {serverError}
               </p>
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label
+                htmlFor="email"
+                className="font-condensed text-xs font-bold uppercase tracking-[0.18em] text-[#062A19]/70"
+              >
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
                 placeholder="nombre@club.com"
                 aria-invalid={!!errors.email}
+                className="h-12 rounded-xl border-[#062A19]/15 bg-white text-base shadow-none focus-visible:border-[#00923F] focus-visible:ring-[#00923F]/25"
                 {...register("email")}
               />
               {errors.email ? (
@@ -121,46 +122,59 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <div className="flex items-baseline justify-between gap-3">
+                <Label
+                  htmlFor="password"
+                  className="font-condensed text-xs font-bold uppercase tracking-[0.18em] text-[#062A19]/70"
+                >
+                  Contraseña
+                </Label>
+                <Link
+                  href="/recuperar-password"
+                  className="rounded text-sm text-[#00923F] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00923F]"
+                >
+                  ¿La olvidaste?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
                 autoComplete="current-password"
                 aria-invalid={!!errors.password}
+                className="h-12 rounded-xl border-[#062A19]/15 bg-white text-base shadow-none focus-visible:border-[#00923F] focus-visible:ring-[#00923F]/25"
                 {...register("password")}
               />
               {errors.password ? (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               ) : null}
             </div>
-          </CardContent>
 
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Ingresando..." : "Ingresar"}
-            </Button>
-            <Link
-              href="/recuperar-password"
-              className="text-center text-sm text-muted-foreground hover:underline"
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 w-full rounded-full bg-[#00923F] font-condensed text-base font-bold uppercase tracking-widest text-white hover:bg-[#00A648] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00923F]"
             >
-              ¿Olvidaste tu contraseña?
-            </Link>
-            {/* SPEC.md §7.1: "el de socio agrega CTA 'Solicitar una cuenta'"
-                — un único componente de login sirve a staff/instructor/socio,
-                así que el CTA se muestra siempre en vez de bifurcar el
-                componente por audiencia (no hay forma de saber, antes de
-                loguearse, si quien visita `/login` es un aspirante a socio o
-                un empleado). */}
+              {isSubmitting ? "Ingresando…" : "Ingresar"}
+            </Button>
+          </form>
+
+          {/* SPEC.md §7.1: "el de socio agrega CTA 'Solicitar una cuenta'" — un
+              único componente de login sirve a staff/instructor/socio, así que
+              el CTA se muestra siempre en vez de bifurcar el componente por
+              audiencia (no hay forma de saber, antes de loguearse, si quien
+              visita `/login` es un aspirante a socio o un empleado). Usa el
+              mismo vocabulario que la landing ("Sumate al club"). */}
+          <p className="mt-8 border-t border-[#062A19]/10 pt-6 text-center text-sm text-[#062A19]/60">
+            ¿Todavía no sos socio?{" "}
             <Link
               href="/solicitud-membresia"
-              className="text-center text-sm text-muted-foreground hover:underline"
+              className="rounded font-semibold text-[#00923F] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00923F]"
             >
-              Solicitar una cuenta
+              Sumate al club
             </Link>
-          </CardFooter>
-          </form>
-        </Card>
-      </div>
+          </p>
+        </div>
+      </main>
     </div>
   );
 }
