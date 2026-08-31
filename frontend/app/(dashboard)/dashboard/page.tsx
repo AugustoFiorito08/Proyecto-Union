@@ -2,9 +2,11 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  CheckCircle2,
   ClipboardCheck,
   MessageCircleQuestion,
   Receipt,
+  TrendingUp,
   UserCheck,
   UserX,
   Users,
@@ -12,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { apiFetch, ApiError } from "@/lib/api";
+import { getSessionToken } from "@/lib/auth";
+import { decodeJwtPayload, nombreParaMostrar, type SessionClaims } from "@/lib/jwt";
 import { ESTADO_CONSULTA_A_INT, ESTADO_SOLICITUD_MEMBRESIA_A_INT } from "@/lib/enums";
 import type {
   ConsultaSocio,
@@ -21,32 +25,24 @@ import type {
   ReporteSocios,
   SolicitudMembresia,
 } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Resultado de cada fetch del panel. `forbidden` es un caso normal, no un
- * error: el panel es la pantalla de inicio de TODOS los roles de staff, y la
- * matriz de permisos (§2.2) no le da Finanzas ni Reportes a Empleado/
- * Secretaría. Una sección sin permiso simplemente no se dibuja — no tiene
- * sentido llenarle el inicio de avisos de "no tenés acceso" a quien entra acá
- * todos los días.
+ * `forbidden` es un caso normal, no un error: el panel es la pantalla de inicio
+ * de TODOS los roles de staff, y la matriz de permisos (§2.2) no le da Finanzas
+ * ni Reportes a Empleado/Secretaría. Una sección sin permiso no se dibuja — no
+ * tiene sentido llenarle el inicio de avisos de "no tenés acceso" a quien entra
+ * acá todos los días.
  */
-interface Fetch<T> {
-  data: T | null;
-  forbidden: boolean;
-}
-
-async function traer<T>(path: string): Promise<Fetch<T>> {
+async function traer<T>(path: string): Promise<{ data: T | null }> {
   try {
-    return { data: await apiFetch<T>(path), forbidden: false };
+    return { data: await apiFetch<T>(path) };
   } catch (error) {
-    return {
-      data: null,
-      forbidden: error instanceof ApiError && error.status === 403,
-    };
+    void (error instanceof ApiError);
+    return { data: null };
   }
 }
 
@@ -65,89 +61,140 @@ function moneda(valor: number): string {
   }).format(valor);
 }
 
+function saludo(): string {
+  const hora = new Date().getHours();
+  if (hora < 13) return "Buen día";
+  if (hora < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+const FECHA_LARGA = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 /**
- * Tarjeta de un pendiente accionable. Toda la tarjeta es el enlace al módulo
- * donde se resuelve: el panel no informa por informar, lleva al lugar donde se
- * hace algo. Cuando el contador está en cero se muestra igual, en tono neutro
- * — que no haya nada pendiente también es información.
+ * Tarjeta de un pendiente accionable: toda la tarjeta es el enlace al módulo
+ * donde eso se resuelve. Sólo se dibuja cuando hay algo pendiente — cuatro
+ * ceros en gris se leían como una pantalla rota, no como "todo bien" (para eso
+ * está `<TodoAlDia />`).
  */
 function Pendiente({
   href,
   etiqueta,
   cantidad,
+  accion,
   icono: Icono,
   urgente,
 }: {
   href: string;
   etiqueta: string;
   cantidad: number;
+  accion: string;
   icono: typeof Users;
   urgente?: boolean;
 }) {
-  const hay = cantidad > 0;
   return (
     <Link
       href={href}
       className={cn(
-        "group flex items-start justify-between gap-2.5 rounded-xl border p-3.5 transition-colors sm:p-4",
-        hay && urgente
-          ? "border-destructive/30 bg-destructive/5 hover:bg-destructive/10"
-          : hay
-            ? "border-primary/25 bg-primary/5 hover:bg-primary/10"
-            : "border-border bg-card hover:bg-muted",
+        "group flex items-center gap-4 rounded-2xl border p-5 transition-colors",
+        urgente
+          ? "border-destructive/25 bg-destructive/5 hover:bg-destructive/10"
+          : "border-primary/20 bg-primary/5 hover:bg-primary/10",
       )}
     >
-      <div className="min-w-0">
-        <p className="text-sm leading-snug text-muted-foreground">{etiqueta}</p>
-        <p
-          className={cn(
-            "mt-1 text-2xl font-semibold tabular-nums sm:text-3xl",
-            hay && urgente ? "text-destructive" : hay ? "text-primary" : "text-muted-foreground",
-          )}
-        >
-          {cantidad}
+      <span
+        className={cn(
+          "flex size-12 shrink-0 items-center justify-center rounded-full",
+          urgente ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary",
+        )}
+      >
+        <Icono className="size-6" aria-hidden="true" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="flex items-baseline gap-2">
+          <span
+            className={cn(
+              "text-3xl font-bold tabular-nums leading-none",
+              urgente ? "text-destructive" : "text-primary",
+            )}
+          >
+            {cantidad}
+          </span>
+          <span className="truncate text-base font-medium">{etiqueta}</span>
+        </p>
+        <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+          {accion}
+          <ArrowRight
+            className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
         </p>
       </div>
-      <Icono
-        className={cn(
-          "size-5 shrink-0",
-          hay && urgente ? "text-destructive" : hay ? "text-primary" : "text-muted-foreground/60",
-        )}
-        aria-hidden="true"
-      />
     </Link>
   );
 }
 
-/** Número de contexto, sin acción asociada: sólo describe el estado del club. */
-function Dato({
+/** Un pendiente en cero no se oculta en silencio: se dice explícitamente que está al día. */
+function TodoAlDia() {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+        <CheckCircle2 className="size-6" aria-hidden="true" />
+      </span>
+      <div>
+        <p className="text-base font-semibold">Estás al día</p>
+        <p className="text-sm text-muted-foreground">
+          No hay solicitudes, consultas, cuotas vencidas ni reservas esperando.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Cifra de contexto dentro de un panel de estado. La primera de cada panel va destacada. */
+function Cifra({
   etiqueta,
   valor,
   icono: Icono,
+  destacada,
   tono = "neutro",
 }: {
   etiqueta: string;
   valor: string;
   icono: typeof Users;
+  destacada?: boolean;
   tono?: "neutro" | "ok" | "alerta";
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-t border-border pt-4">
-      <div className="min-w-0">
-        <p className="text-sm text-muted-foreground">{etiqueta}</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{valor}</p>
-      </div>
-      <Icono
+    <div className="flex items-center gap-3.5">
+      <span
         className={cn(
-          "size-5 shrink-0",
+          "flex shrink-0 items-center justify-center rounded-full",
+          destacada ? "size-11" : "size-9",
           tono === "ok"
-            ? "text-primary"
+            ? "bg-primary/12 text-primary"
             : tono === "alerta"
-              ? "text-[#C2810A] dark:text-[#E8A33D]"
-              : "text-muted-foreground/60",
+              ? "bg-[#E8A33D]/15 text-[#B87A16] dark:text-[#E8A33D]"
+              : "bg-muted text-muted-foreground",
         )}
-        aria-hidden="true"
-      />
+      >
+        <Icono className={destacada ? "size-5" : "size-4"} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p
+          className={cn(
+            "font-bold tabular-nums leading-tight",
+            destacada ? "text-3xl" : "text-xl",
+          )}
+        >
+          {valor}
+        </p>
+        <p className="text-sm text-muted-foreground">{etiqueta}</p>
+      </div>
     </div>
   );
 }
@@ -157,48 +204,57 @@ function Dato({
  * magnitudes entre categorías con nombres largos. Un solo tono verde — el largo
  * de la barra ya codifica la magnitud, así que escalar colores por umbral sería
  * redundante. El rojo queda reservado para la anomalía operativa real
- * (sobrecupo, >100%), y siempre acompañado del número, nunca color solo.
+ * (sobrecupo), y siempre acompañado del número, nunca color solo.
  */
 function Ocupacion({ actividades }: { actividades: ReporteActividadItem[] }) {
-  const conCupo = actividades.filter((a) => a.cupoMaximo > 0).slice(0, 8);
+  const conCupo = actividades.filter((a) => a.cupoMaximo > 0).slice(0, 6);
 
   if (conCupo.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
-        No hay actividades con cupo definido.
+      <p className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+        Todavía no hay actividades con cupo definido.
       </p>
     );
   }
 
   return (
-    <ul className="space-y-3.5">
+    <ul className="space-y-4">
       {conCupo.map((actividad) => {
         const pct = Math.round(actividad.porcentajeOcupacion);
         const sobrecupo = pct > 100;
         return (
           <li key={actividad.actividadId}>
             <div className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-sm font-medium">{actividad.nombre}</span>
+              <span className="truncate font-medium">{actividad.nombre}</span>
               <span
                 className={cn(
                   "shrink-0 text-sm tabular-nums",
                   sobrecupo ? "font-semibold text-destructive" : "text-muted-foreground",
                 )}
               >
-                {actividad.inscriptosActivos}/{actividad.cupoMaximo}
-                <span className="ml-1.5">({pct}%)</span>
+                {actividad.inscriptosActivos} de {actividad.cupoMaximo}
               </span>
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn("h-full rounded-full", sobrecupo ? "bg-destructive" : "bg-primary")}
-                style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
-              />
+            <div className="mt-2 flex items-center gap-3">
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", sobrecupo ? "bg-destructive" : "bg-primary")}
+                  style={{ width: `${Math.min(100, Math.max(3, pct))}%` }}
+                />
+              </div>
+              <span
+                className={cn(
+                  "w-12 shrink-0 text-right text-sm font-semibold tabular-nums",
+                  sobrecupo ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                {pct}%
+              </span>
             </div>
             {sobrecupo ? (
-              <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-destructive">
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
                 <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-                Sobrecupo
+                Sobrecupo: hay más inscriptos que lugares
               </p>
             ) : null}
           </li>
@@ -209,16 +265,17 @@ function Ocupacion({ actividades }: { actividades: ReporteActividadItem[] }) {
 }
 
 /**
- * Panel de inicio del staff (`/dashboard`). Reemplaza la grilla de accesos
- * directos que había — era un menú, no un panel, y además duplicaba el sidebar
- * quedándose sólo con los 4 módulos de la Etapa 1.
- *
- * Se ordena por la pregunta real de quien lo abre a la mañana: primero qué
- * necesita atención hoy (accionable, cada tarjeta lleva a su módulo), después
- * cómo está el club. Todos los fetches van en paralelo y son independientes:
- * que un rol no tenga permiso sobre Finanzas no puede vaciarle el inicio.
+ * Panel de inicio del staff (`/dashboard`). Se ordena por la pregunta real de
+ * quien lo abre a la mañana: primero qué necesita atención hoy (accionable),
+ * después cómo está el club. Todos los fetches van en paralelo y son
+ * independientes: que un rol no tenga permiso sobre Finanzas no puede vaciarle
+ * el inicio.
  */
 export default async function DashboardPage() {
+  const token = await getSessionToken();
+  const claims = token ? decodeJwtPayload<SessionClaims>(token) : null;
+  const nombre = nombreParaMostrar(claims);
+
   const [finanzas, socios, actividades, solicitudes, consultas] = await Promise.all([
     traer<FinanzasDashboard>("/api/finanzas/dashboard"),
     traer<ReporteSocios>("/api/reportes/socios"),
@@ -235,84 +292,116 @@ export default async function DashboardPage() {
   const consultasPendientes = contar(consultas.data);
 
   const pendientes = [
-    solicitudesPendientes !== null && {
-      href: "/solicitudes-membresia",
-      etiqueta: "Solicitudes por revisar",
-      cantidad: solicitudesPendientes,
-      icono: ClipboardCheck,
-    },
-    consultasPendientes !== null && {
-      href: "/consultas",
-      etiqueta: "Consultas sin responder",
-      cantidad: consultasPendientes,
-      icono: MessageCircleQuestion,
-    },
-    finanzas.data && {
-      href: "/pagos",
-      etiqueta: "Cuotas vencidas",
-      cantidad: finanzas.data.cuotasVencidas,
-      icono: Receipt,
-      urgente: true,
-    },
-    finanzas.data && {
-      href: "/reservas",
-      etiqueta: "Reservas por revisar",
-      cantidad: finanzas.data.reservasPagadasPendientesDeCheck,
-      icono: ClipboardCheck,
-    },
-  ].filter(Boolean) as Array<Parameters<typeof Pendiente>[0] & { href: string }>;
+    solicitudesPendientes
+      ? {
+          href: "/solicitudes-membresia",
+          etiqueta:
+            solicitudesPendientes === 1 ? "solicitud por revisar" : "solicitudes por revisar",
+          cantidad: solicitudesPendientes,
+          accion: "Revisar solicitudes",
+          icono: ClipboardCheck,
+        }
+      : null,
+    consultasPendientes
+      ? {
+          href: "/consultas",
+          etiqueta: consultasPendientes === 1 ? "consulta sin responder" : "consultas sin responder",
+          cantidad: consultasPendientes,
+          accion: "Responder consultas",
+          icono: MessageCircleQuestion,
+        }
+      : null,
+    finanzas.data?.cuotasVencidas
+      ? {
+          href: "/pagos",
+          etiqueta: finanzas.data.cuotasVencidas === 1 ? "cuota vencida" : "cuotas vencidas",
+          cantidad: finanzas.data.cuotasVencidas,
+          accion: "Ver pagos",
+          icono: Receipt,
+          urgente: true,
+        }
+      : null,
+    finanzas.data?.reservasPagadasPendientesDeCheck
+      ? {
+          href: "/reservas",
+          etiqueta:
+            finanzas.data.reservasPagadasPendientesDeCheck === 1
+              ? "reserva por revisar"
+              : "reservas por revisar",
+          cantidad: finanzas.data.reservasPagadasPendientesDeCheck,
+          accion: "Ver reservas",
+          icono: ClipboardCheck,
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
+  /* Sólo se puede afirmar "estás al día" si de verdad se pudieron leer los
+     pendientes. Si ningún fetch respondió, no hay nada que afirmar. */
+  const pudoLeerPendientes =
+    solicitudesPendientes !== null || consultasPendientes !== null || finanzas.data !== null;
 
   const cantidadPorEstado = (estado: string) =>
     socios.data?.porEstado.find((fila) => fila.estado === estado)?.cantidad ?? 0;
 
-  const hayEstadoDelClub = Boolean(socios.data || finanzas.data);
+  const suspendidos = cantidadPorEstado("Suspendido");
+  const hayEstadoDelClub = Boolean(socios.data || finanzas.data || actividades.data);
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="font-heading text-2xl font-semibold tracking-tight">Inicio</h2>
-        <p className="text-sm text-muted-foreground">
-          Lo que necesita atención hoy y cómo viene el club.
+      <header>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">
+          {saludo()}
+          {nombre ? `, ${nombre}` : ""}
+        </h2>
+        <p className="mt-1 text-muted-foreground first-letter:uppercase">
+          {FECHA_LARGA.format(new Date())}
         </p>
-      </div>
+      </header>
 
       {pendientes.length > 0 ? (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Requiere atención
-          </h3>
-          {/* Dos columnas ya desde mobile: cuatro tarjetas apiladas obligaban a
-              scrollear casi una pantalla entera antes de llegar al estado del club. */}
-          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <h3 className="text-sm font-semibold text-muted-foreground">Necesita tu atención</h3>
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
             {pendientes.map((item) => (
               <Pendiente key={item.href + item.etiqueta} {...item} />
             ))}
           </div>
         </section>
+      ) : pudoLeerPendientes ? (
+        <TodoAlDia />
       ) : null}
 
       {hayEstadoDelClub ? (
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {socios.data ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Socios</CardTitle>
+                <CardAction>
+                  <Link
+                    href="/socios"
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    Ver todos
+                  </Link>
+                </CardAction>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Dato
-                  etiqueta="Activos"
+              <CardContent className="space-y-5">
+                <Cifra
+                  etiqueta="activos"
                   valor={String(cantidadPorEstado("Activo"))}
                   icono={UserCheck}
                   tono="ok"
+                  destacada
                 />
-                <Dato
-                  etiqueta="Suspendidos"
-                  valor={String(cantidadPorEstado("Suspendido"))}
+                <Cifra
+                  etiqueta="suspendidos"
+                  valor={String(suspendidos)}
                   icono={UserX}
-                  tono={cantidadPorEstado("Suspendido") > 0 ? "alerta" : "neutro"}
+                  tono={suspendidos > 0 ? "alerta" : "neutro"}
                 />
-                <Dato
-                  etiqueta="Inactivos"
+                <Cifra
+                  etiqueta="inactivos"
                   valor={String(cantidadPorEstado("Inactivo"))}
                   icono={Users}
                 />
@@ -324,21 +413,30 @@ export default async function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Finanzas del mes</CardTitle>
+                <CardAction>
+                  <Link
+                    href="/finanzas/dashboard"
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    Ver detalle
+                  </Link>
+                </CardAction>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Dato
-                  etiqueta="Ingresos"
+              <CardContent className="space-y-5">
+                <Cifra
+                  etiqueta="ingresos del mes"
                   valor={moneda(finanzas.data.ingresosMesActual)}
-                  icono={Wallet}
+                  icono={TrendingUp}
                   tono="ok"
+                  destacada
                 />
-                <Dato
-                  etiqueta="Cuotas pendientes"
+                <Cifra
+                  etiqueta="cuotas pendientes de cobro"
                   valor={String(finanzas.data.cuotasPendientes)}
-                  icono={Receipt}
+                  icono={Wallet}
                 />
-                <Dato
-                  etiqueta="Socios morosos"
+                <Cifra
+                  etiqueta="socios con deuda"
                   valor={String(finanzas.data.sociosMorosos)}
                   icono={AlertTriangle}
                   tono={finanzas.data.sociosMorosos > 0 ? "alerta" : "neutro"}
@@ -348,16 +446,17 @@ export default async function DashboardPage() {
           ) : null}
 
           {actividades.data ? (
-            <Card className="lg:col-span-1">
-              <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Ocupación de actividades</CardTitle>
-                <Link
-                  href="/reportes"
-                  className="inline-flex shrink-0 items-center gap-1 text-sm text-primary underline-offset-4 hover:underline"
-                >
-                  Ver todo
-                  <ArrowRight className="size-3.5" aria-hidden="true" />
-                </Link>
+                <CardAction>
+                  <Link
+                    href="/reportes"
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    Ver todas
+                  </Link>
+                </CardAction>
               </CardHeader>
               <CardContent>
                 <Ocupacion actividades={actividades.data} />
@@ -367,9 +466,9 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {pendientes.length === 0 && !hayEstadoDelClub ? (
-        <p className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-          No se pudo cargar el panel. Verificá tu conexión o volvé a intentar en unos minutos.
+      {pendientes.length === 0 && !pudoLeerPendientes && !hayEstadoDelClub ? (
+        <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+          No se pudo cargar el panel. Revisá tu conexión y volvé a intentar en unos minutos.
         </p>
       ) : null}
     </div>

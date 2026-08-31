@@ -1,35 +1,24 @@
 import { Bell } from "lucide-react";
 
 import { getSessionToken } from "@/lib/auth";
-import { decodeJwtPayload, type SessionClaims } from "@/lib/jwt";
+import { decodeJwtPayload, pickClaim, type SessionClaims } from "@/lib/jwt";
 import { HeaderBreadcrumb } from "@/components/header-breadcrumb";
 
 // Claims estándar de ASP.NET Core (`ClaimTypes.*`) que un JWT emitido por
-// `Microsoft.IdentityModel` suele usar en vez de las claves cortas
-// ("email", "role"). Se prueban ambas formas porque todavía no vimos un
-// token real emitido por el backend de Etapa 1 en adelante — confirmar
-// contra la implementación real y simplificar esta lista si hace falta.
-const EMAIL_CLAIM_KEYS = [
-  "email",
-  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-];
+// `Microsoft.IdentityModel` suele usar en vez de la clave corta "role".
 const ROLE_CLAIM_KEYS = [
   "role",
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+];
+const EMAIL_CLAIM_KEYS = [
+  "email",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
 ];
 const NAME_CLAIM_KEYS = [
   "name",
   "unique_name",
   "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
 ];
-
-function pickClaim(claims: SessionClaims, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = claims[key];
-    if (typeof value === "string" && value.length > 0) return value;
-  }
-  return undefined;
-}
 
 export async function Header() {
   const token = await getSessionToken();
