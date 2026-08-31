@@ -15,9 +15,10 @@ interface LogoCauProps {
  * logo aparece a tamaños muy distintos (20px en el sidebar, ~250px en el login)
  * y el recorte disponible era de 56px — escalarlo se veía borroso.
  *
- * `variant="monocromo"` lo pinta en `currentColor` (contorno y banda toman el
- * color del contenedor), para usarlo sobre fondos verdes donde el escudo a
- * color no contrasta.
+ * `variant="monocromo"` lo pinta enteramente en `currentColor` — todas las
+ * partes, incluidas las siglas, para que la opacidad del contenedor las afecte
+ * por igual. Es lo que permite usarlo como marca de agua muy tenue
+ * (`text-white/[0.04]`) sin que las siglas se destaquen sobre el resto.
  */
 export function LogoCau({
   className,
@@ -39,18 +40,18 @@ export function LogoCau({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Contorno blanco del escudo */}
+      {/* Contorno del escudo */}
       <path
         d="M48 1.5 C36 6 20 9 4.5 10 L4.5 54 C4.5 79 22 96.5 48 106.5 C74 96.5 91.5 79 91.5 54 L91.5 10 C76 9 60 6 48 1.5 Z"
         fill={esMono ? "currentColor" : "#FFFFFF"}
       />
-      {/* Cuerpo verde del escudo */}
+      {/* Cuerpo del escudo */}
       <path
         d="M48 9 C37 13 22.5 15.7 11.5 16.6 L11.5 54 C11.5 75.5 26.5 91 48 99.8 C69.5 91 84.5 75.5 84.5 54 L84.5 16.6 C73.5 15.7 59 13 48 9 Z"
-        fill={esMono ? "#FFFFFF" : verde}
-        fillOpacity={esMono ? 0.15 : 1}
+        fill={esMono ? "currentColor" : verde}
+        fillOpacity={esMono ? 0.45 : 1}
       />
-      {/* Banda horizontal blanca */}
+      {/* Banda horizontal */}
       <path
         d="M11.5 39.5 L84.5 39.5 L84.5 68 L11.5 68 Z"
         fill={esMono ? "currentColor" : blanco}
@@ -60,7 +61,8 @@ export function LogoCau({
         x="48"
         y="59.5"
         textAnchor="middle"
-        fill={esMono ? "#FFFFFF" : verde}
+        fill={esMono ? "currentColor" : verde}
+        fillOpacity={esMono ? 0.45 : 1}
         fontSize="22"
         fontWeight="800"
         letterSpacing="1"
