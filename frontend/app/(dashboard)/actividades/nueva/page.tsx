@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchList } from "@/lib/api";
 import type { Categoria, Espacio } from "@/lib/types";
 import { ActividadForm } from "../actividad-form";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function NuevaActividadPage() {
   const [categorias, espacios] = await Promise.all([
     apiFetch<Categoria[]>("/api/configuracion/categorias").catch(() => []),
-    apiFetch<Espacio[]>("/api/espacios").catch(() => []),
+    apiFetchList<Espacio>("/api/espacios").catch(() => []),
   ]);
 
   return (

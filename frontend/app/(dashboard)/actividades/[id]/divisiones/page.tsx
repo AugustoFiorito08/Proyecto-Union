@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, apiFetchList, ApiError } from "@/lib/api";
 import type { Actividad, Instructor } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -37,7 +37,7 @@ export default async function DivisionesPage({ params }: DivisionesPageProps) {
     throw error;
   }
 
-  const instructoresDisponibles = await apiFetch<Instructor[]>("/api/instructores").catch(
+  const instructoresDisponibles = await apiFetchList<Instructor>("/api/instructores").catch(
     () => [] as Instructor[]
   );
 

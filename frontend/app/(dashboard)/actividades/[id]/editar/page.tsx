@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, apiFetchList, ApiError } from "@/lib/api";
 import type { Actividad, Categoria, Espacio } from "@/lib/types";
 import { ActividadForm } from "../../actividad-form";
 
@@ -25,7 +25,7 @@ export default async function EditarActividadPage({ params }: EditarActividadPag
 
   const [categorias, espacios] = await Promise.all([
     apiFetch<Categoria[]>("/api/configuracion/categorias").catch(() => []),
-    apiFetch<Espacio[]>("/api/espacios").catch(() => []),
+    apiFetchList<Espacio>("/api/espacios").catch(() => []),
   ]);
 
   return (

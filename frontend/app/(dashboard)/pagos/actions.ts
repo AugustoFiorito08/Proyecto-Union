@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, apiFetchList, ApiError } from "@/lib/api";
 import { MEDIO_PAGO_A_INT } from "@/lib/enums";
 import type { Pago, PagoManualInput } from "@/lib/types";
 
@@ -25,7 +25,7 @@ function toMessage(error: unknown): string {
  */
 export async function registrarPagoManual(input: PagoManualInput): Promise<ActionResult<Pago[]>> {
   try {
-    const pagos = await apiFetch<Pago[]>("/api/pagos", {
+    const pagos = await apiFetchList<Pago>("/api/pagos", {
       method: "POST",
       body: JSON.stringify({ ...input, medioPago: MEDIO_PAGO_A_INT[input.medioPago] }),
     });

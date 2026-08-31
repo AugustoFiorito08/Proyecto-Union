@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchList } from "@/lib/api";
 import type { Espacio, PaginatedResult, SocioResumen } from "@/lib/types";
 import { ReservaForm } from "../reserva-form";
 
@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NuevaReservaPage() {
   const [espacios, sociosResult] = await Promise.all([
-    apiFetch<Espacio[]>("/api/espacios").catch(() => [] as Espacio[]),
+    apiFetchList<Espacio>("/api/espacios").catch(() => [] as Espacio[]),
     apiFetch<PaginatedResult<SocioResumen> | SocioResumen[]>("/api/socios").catch(
       () => [] as SocioResumen[]
     ),

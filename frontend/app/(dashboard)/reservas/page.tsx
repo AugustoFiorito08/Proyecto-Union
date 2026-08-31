@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 
 import { apiFetch } from "@/lib/api";
 import { ESTADO_RESERVA_A_INT } from "@/lib/enums";
-import type { Espacio, EstadoReserva, Reserva } from "@/lib/types";
+import type { Espacio, EstadoReserva, PaginatedResult, Reserva } from "@/lib/types";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Table,
@@ -44,7 +44,14 @@ export default async function ReservasPage({ searchParams }: ReservasPageProps) 
   const params = await searchParams;
   const fecha = params.fecha ?? hoyIso();
 
-  const espacios = await apiFetch<Espacio[]>("/api/espacios").catch(() => [] as Espacio[]);
+  // `GET /api/espacios` devuelve `PagedResult`, no un array plano: tipado como
+  // array, `espacios.map` rompía la pantalla entera con "espacios.map is not a
+  // function". Mismo chequeo defensivo que ya usan Socios, Consultas y
+  // Solicitudes de Membresía — patrón recurrente desde Etapa 3.
+  const espaciosRaw = await apiFetch<PaginatedResult<Espacio> | Espacio[]>(
+    "/api/espacios",
+  ).catch(() => [] as Espacio[]);
+  const espacios = Array.isArray(espaciosRaw) ? espaciosRaw : espaciosRaw.items;
 
   let reservas: Reserva[] = [];
   let loadError: string | null = null;
@@ -57,7 +64,11 @@ export default async function ReservasPage({ searchParams }: ReservasPageProps) 
       // en `GET /api/socios` (ver `SociosController.cs`).
       query.set("estado", String(ESTADO_RESERVA_A_INT[params.estado as EstadoReserva]));
     }
-    reservas = await apiFetch<Reserva[]>(`/api/reservas?${query.toString()}`);
+    // Mismo caso que `/api/espacios` de arriba: la respuesta es `PagedResult`.
+    const resultado = await apiFetch<PaginatedResult<Reserva> | Reserva[]>(
+      `/api/reservas?${query.toString()}`,
+    );
+    reservas = Array.isArray(resultado) ? resultado : resultado.items;
   } catch (error) {
     loadError = error instanceof Error ? error.message : "No se pudo cargar el listado.";
   }

@@ -1,4 +1,5 @@
 import { getSessionToken } from "@/lib/auth";
+import type { PaginatedResult } from "@/lib/types";
 
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:5000";
 
@@ -120,6 +121,25 @@ export async function apiFetchForm<T>(path: string, formData: FormData): Promise
   }
 
   return (await response.json()) as T;
+}
+
+/**
+ * Igual que `apiFetch`, pero para endpoints de listado: siempre devuelve un
+ * array, venga la respuesta como array plano o envuelta en `PagedResult`
+ * (`{ items, page, pageSize, totalCount }`).
+ *
+ * Existe porque esa inconsistencia del backend ya causó bugs reales de runtime:
+ * tipar la respuesta como `T[]` cuando en realidad venía paginada hacía explotar
+ * la pantalla entera con "x.map is not a function" (le pasó a `/reservas` con
+ * `/api/espacios` y `/api/reservas`). La forma varía por endpoint y no por una
+ * regla que se pueda deducir leyendo la ruta —`/api/configuracion/categorias`
+ * devuelve array y `/api/espacios` devuelve `PagedResult`— así que en vez de
+ * recordar cuál es cuál en cada llamada, se normaliza acá una sola vez.
+ */
+export async function apiFetchList<T>(path: string, init?: RequestInit): Promise<T[]> {
+  const resultado = await apiFetch<PaginatedResult<T> | T[]>(path, init);
+  if (Array.isArray(resultado)) return resultado;
+  return resultado?.items ?? [];
 }
 
 export { API_BASE_URL };
