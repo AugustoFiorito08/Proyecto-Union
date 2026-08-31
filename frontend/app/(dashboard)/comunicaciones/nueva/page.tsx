@@ -25,8 +25,8 @@ export default async function NuevaComunicacionPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Nueva comunicación</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Nueva comunicación</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Se guarda como borrador y recién se envía o programa al terminar el wizard.
         </p>
       </div>

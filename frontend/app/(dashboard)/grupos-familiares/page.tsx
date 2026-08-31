@@ -46,8 +46,8 @@ export default async function GruposFamiliaresPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Grupos Familiares</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Grupos Familiares</h2>
+          <p className="mt-0.5 text-muted-foreground">
             Titulares, integrantes y estado de los grupos familiares.
           </p>
         </div>
@@ -77,11 +77,11 @@ export default async function GruposFamiliaresPage({
       </form>
 
       {loadError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {loadError}
         </p>
       ) : grupos.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           No se encontraron grupos familiares.
         </p>
       ) : (

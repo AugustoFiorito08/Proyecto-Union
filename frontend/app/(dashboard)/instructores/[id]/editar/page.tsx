@@ -26,10 +26,10 @@ export default async function EditarInstructorPage({ params }: EditarInstructorP
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">
           Editar instructor — {instructor.apellido}, {instructor.nombres}
         </h2>
-        <p className="text-sm text-muted-foreground">Actualizá los datos de contacto.</p>
+        <p className="mt-0.5 text-muted-foreground">Actualizá los datos de contacto.</p>
       </div>
 
       <EditarInstructorForm instructor={instructor} />

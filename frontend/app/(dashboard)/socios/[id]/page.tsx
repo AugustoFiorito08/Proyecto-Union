@@ -49,7 +49,7 @@ export default async function SocioDetallePage({ params }: SocioDetallePageProps
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">Socio N° {socio.numeroSocio}</p>
-          <h2 className="text-xl font-semibold">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
             {socio.apellido}, {socio.nombres}
           </h2>
           <div className="mt-1">

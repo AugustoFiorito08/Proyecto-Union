@@ -68,7 +68,7 @@ export default async function InstructorInscriptosPage({
           <ArrowLeft className="size-4" aria-hidden="true" />
           Mis actividades
         </Link>
-        <h2 className="text-xl font-semibold">{actividad?.nombre ?? "Inscriptos"}</h2>
+        <h2 className="font-heading text-2xl font-bold tracking-tight">{actividad?.nombre ?? "Inscriptos"}</h2>
         {actividad ? (
           <p className="text-sm text-muted-foreground">
             {actividad.dias ?? "—"} · {actividad.horarioInicio.slice(0, 5)}-
@@ -79,11 +79,11 @@ export default async function InstructorInscriptosPage({
       </div>
 
       {loadError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {loadError}
         </p>
       ) : inscriptos.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           Todavía no hay socios inscriptos en esta actividad.
         </p>
       ) : (

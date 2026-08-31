@@ -50,8 +50,8 @@ export default async function EditarComunicacionPage({ params }: EditarComunicac
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Editar borrador</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Editar borrador</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Volvé a elegir destinatarios y canal antes de guardar (ver nota en el wizard).
         </p>
       </div>

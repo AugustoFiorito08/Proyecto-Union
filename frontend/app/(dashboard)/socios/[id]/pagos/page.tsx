@@ -73,7 +73,7 @@ export default async function SocioPagosPage({ params }: SocioPagosPageProps) {
             <ArrowLeft className="size-3.5" aria-hidden="true" />
             Volver al socio
           </Link>
-          <h2 className="text-xl font-semibold">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
             Pagos y cuotas — {socio.apellido}, {socio.nombres}
           </h2>
         </div>

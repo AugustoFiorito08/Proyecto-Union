@@ -20,8 +20,8 @@ export default async function NuevoGrupoFamiliarPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Nuevo grupo familiar</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Nuevo grupo familiar</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Seleccioná el socio titular para dar de alta el grupo familiar.
         </p>
       </div>

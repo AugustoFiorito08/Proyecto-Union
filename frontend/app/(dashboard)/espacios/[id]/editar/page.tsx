@@ -30,8 +30,8 @@ export default async function EditarEspacioPage({ params }: EditarEspacioPagePro
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Editar espacio — {espacio.nombre}</h2>
-        <p className="text-sm text-muted-foreground">Actualizá los datos del espacio.</p>
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Editar espacio — {espacio.nombre}</h2>
+        <p className="mt-0.5 text-muted-foreground">Actualizá los datos del espacio.</p>
       </div>
 
       <EspacioForm amenitiesDisponibles={amenitiesDisponibles} espacio={espacio} />

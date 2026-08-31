@@ -92,8 +92,8 @@ export default async function ControlAccesoHistorialPage({ searchParams }: Histo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Historial de accesos</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Historial de accesos</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Registro de cada intento de ingreso por portería, permitido o denegado (RN-ACC-03).
         </p>
       </div>
@@ -101,11 +101,11 @@ export default async function ControlAccesoHistorialPage({ searchParams }: Histo
       <HistorialFiltro socios={socios} socioId={socioId ?? ""} />
 
       {loadError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {loadError}
         </p>
       ) : registros.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           No hay registros de acceso.
         </p>
       ) : (

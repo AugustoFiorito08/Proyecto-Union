@@ -173,7 +173,7 @@ export function ControlAccesoScreen() {
 
       {isPending ? <p className="text-sm text-muted-foreground">Validando...</p> : null}
       {error ? (
-        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       ) : null}

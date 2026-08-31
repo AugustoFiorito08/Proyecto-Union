@@ -68,7 +68,7 @@ export function CuotaChecklistPayment({ cuotas }: CuotaChecklistPaymentProps) {
 
   if (pendientes.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
         No tenés cuotas pendientes. ¡Estás al día!
       </p>
     );

@@ -62,7 +62,7 @@ export default async function SolicitudDetallePage({ params }: SolicitudDetalleP
             Volver al listado
           </Link>
           <p className="text-sm text-muted-foreground">Solicitud N° {solicitud.numeroSolicitud}</p>
-          <h2 className="text-xl font-semibold">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
             {solicitud.apellido}, {solicitud.nombre}
           </h2>
           <div className="mt-1">

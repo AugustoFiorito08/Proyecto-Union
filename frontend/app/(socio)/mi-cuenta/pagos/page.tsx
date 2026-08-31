@@ -26,14 +26,14 @@ export default async function MiCuentaPagosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Estado de cuenta y pagos</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Estado de cuenta y pagos</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Tus cuotas pendientes. Podés seleccionar una o varias y pagarlas juntas.
         </p>
       </div>
 
       {loadError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {loadError}
         </p>
       ) : (

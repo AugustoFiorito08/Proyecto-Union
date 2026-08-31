@@ -12,8 +12,8 @@ export default async function NuevoEspacioPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Nuevo espacio</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Nuevo espacio</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Completá los datos para dar de alta un nuevo espacio reservable.
         </p>
       </div>

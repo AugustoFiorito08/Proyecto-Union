@@ -54,13 +54,13 @@ function ComunicacionesTable({
 }) {
   if (error) {
     return (
-      <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
     );
   }
 
   if (items.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
         No hay comunicaciones en esta pestaña.
       </p>
     );
@@ -143,8 +143,8 @@ export default async function ComunicacionesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Comunicaciones</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Comunicaciones</h2>
+          <p className="mt-0.5 text-muted-foreground">
             Mensajes institucionales por Email, WhatsApp y Novedades del Portal del Socio.
           </p>
         </div>

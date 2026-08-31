@@ -68,7 +68,7 @@ function currency(value: number): string {
 
 function ForbiddenMessage() {
   return (
-    <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+    <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
       No tenés permiso para ver este reporte. Esta sección es exclusiva de SuperAdmin y
       Administrador.
     </p>
@@ -76,12 +76,12 @@ function ForbiddenMessage() {
 }
 
 function ErrorMessage({ text }: { text: string }) {
-  return <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{text}</p>;
+  return <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{text}</p>;
 }
 
 function EmptyMessage({ text }: { text: string }) {
   return (
-    <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+    <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
       {text}
     </p>
   );
@@ -320,8 +320,8 @@ export default async function ReportesPage({ searchParams }: ReportesPageProps) 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Reportes</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Reportes</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Reportes operativos por módulo: Socios, Actividades, Espacios y Accesos.
         </p>
       </div>

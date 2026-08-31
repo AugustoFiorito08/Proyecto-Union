@@ -52,8 +52,8 @@ export default async function MiCuentaComunicacionesPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Comunicaciones</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Comunicaciones</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Novedades del club y tus consultas enviadas.
         </p>
       </div>
@@ -66,7 +66,7 @@ export default async function MiCuentaComunicacionesPage() {
 
         <TabsContent value="novedades" className="mt-4">
           {comunicacionesError ? (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {comunicacionesError}
             </p>
           ) : (
@@ -78,11 +78,11 @@ export default async function MiCuentaComunicacionesPage() {
           <NuevaConsultaForm />
 
           {consultasError ? (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {consultasError}
             </p>
           ) : consultas.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
               Todavía no enviaste ninguna consulta.
             </p>
           ) : (

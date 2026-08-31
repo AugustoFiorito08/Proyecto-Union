@@ -55,7 +55,7 @@ export function NuevaConsultaForm() {
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+          <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
         ) : null}
         {ok ? (
           <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">

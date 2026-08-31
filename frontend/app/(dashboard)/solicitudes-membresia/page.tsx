@@ -52,13 +52,13 @@ function SolicitudesTable({
 }) {
   if (error) {
     return (
-      <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
     );
   }
 
   if (items.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
         No hay solicitudes en esta pestaña.
       </p>
     );
@@ -133,8 +133,8 @@ export default async function SolicitudesMembresiaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Solicitudes de Membresía</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Solicitudes de Membresía</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Solicitudes de alta enviadas desde el portal público (RF-SOL-13).
         </p>
       </div>

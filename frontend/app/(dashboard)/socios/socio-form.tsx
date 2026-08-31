@@ -172,7 +172,7 @@ export function SocioForm({ categorias, coberturas, socio }: SocioFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       {serverError ? (
-        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {serverError}
         </p>
       ) : null}

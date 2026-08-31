@@ -13,8 +13,8 @@ export default async function NuevaActividadPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Nueva actividad</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Nueva actividad</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Completá los datos para dar de alta una nueva actividad. Se crea en estado Suspendida
           hasta que tenga al menos un instructor asignado (RF-ACT-24 bis).
         </p>

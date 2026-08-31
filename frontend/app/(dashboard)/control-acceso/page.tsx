@@ -22,8 +22,8 @@ export default function ControlAccesoPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Control de acceso</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Control de acceso</h2>
+          <p className="mt-0.5 text-muted-foreground">
             Escaneá el QR del carnet para validar el ingreso del socio.
           </p>
         </div>

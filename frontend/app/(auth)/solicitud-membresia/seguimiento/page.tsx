@@ -58,7 +58,7 @@ export default async function SeguimientoSolicitudPage({ searchParams }: Seguimi
   if (rol && rol !== "NoSocio") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           Esta página es solo para el seguimiento de una solicitud de membresía.
         </p>
       </div>
@@ -117,7 +117,7 @@ export default async function SeguimientoSolicitudPage({ searchParams }: Seguimi
               </div>
 
               {solicitud.estado === "Rechazada" ? (
-                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <div className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
                   <p className="font-medium">Motivo del rechazo</p>
                   <p>{solicitud.motivoRechazo || "No se especificó un motivo."}</p>
                 </div>
@@ -143,7 +143,7 @@ export default async function SeguimientoSolicitudPage({ searchParams }: Seguimi
             {loadError}
           </p>
         ) : id ? (
-          <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
             No encontramos ninguna solicitud con ese identificador.
           </p>
         ) : (

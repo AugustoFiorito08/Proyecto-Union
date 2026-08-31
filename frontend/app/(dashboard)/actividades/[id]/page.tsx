@@ -53,7 +53,7 @@ export default async function ActividadDetallePage({ params }: ActividadDetalleP
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{actividad.categoriaNombre}</p>
-          <h2 className="text-xl font-semibold">{actividad.nombre}</h2>
+          <h2 className="font-heading text-2xl font-bold tracking-tight">{actividad.nombre}</h2>
           <div className="mt-1">
             <StatusBadge status={actividad.estado} />
           </div>

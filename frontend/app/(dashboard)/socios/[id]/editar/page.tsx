@@ -31,8 +31,8 @@ export default async function EditarSocioPage({ params }: EditarSocioPageProps) 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Editar socio</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Editar socio</h2>
+        <p className="mt-0.5 text-muted-foreground">
           {socio.apellido}, {socio.nombres} — N° {socio.numeroSocio}
         </p>
       </div>

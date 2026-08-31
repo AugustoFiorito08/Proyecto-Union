@@ -130,7 +130,7 @@ export function InstructorAltaDialog() {
             </DialogHeader>
 
             {serverError ? (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {serverError}
               </p>
             ) : null}
@@ -210,7 +210,7 @@ export function InstructorAltaDialog() {
               </p>
             ) : (
               <>
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
                   El envío de email falló. Comunicá esta contraseña temporal manualmente.
                 </p>
                 <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">

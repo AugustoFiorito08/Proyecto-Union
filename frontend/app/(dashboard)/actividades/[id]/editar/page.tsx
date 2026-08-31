@@ -31,8 +31,8 @@ export default async function EditarActividadPage({ params }: EditarActividadPag
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Editar actividad — {actividad.nombre}</h2>
-        <p className="text-sm text-muted-foreground">Actualizá los datos de la actividad.</p>
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Editar actividad — {actividad.nombre}</h2>
+        <p className="mt-0.5 text-muted-foreground">Actualizá los datos de la actividad.</p>
       </div>
 
       <ActividadForm categorias={categorias} espacios={espacios} actividad={actividad} />

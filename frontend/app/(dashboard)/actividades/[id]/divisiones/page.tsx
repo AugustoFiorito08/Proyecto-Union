@@ -55,8 +55,8 @@ export default async function DivisionesPage({ params }: DivisionesPageProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Divisiones deportivas</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Divisiones deportivas</h2>
+          <p className="mt-0.5 text-muted-foreground">
             Divisiones por edad/género de {actividad.nombre} (RN-ACT-02, SPEC.md §3.17).
           </p>
         </div>
@@ -64,7 +64,7 @@ export default async function DivisionesPage({ params }: DivisionesPageProps) {
       </div>
 
       {actividad.divisiones.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           Todavía no hay divisiones cargadas.
         </p>
       ) : (

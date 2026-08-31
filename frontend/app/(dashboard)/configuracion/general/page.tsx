@@ -31,20 +31,20 @@ export default async function ConfiguracionGeneralPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Configuración general</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Configuración general</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Parámetros financieros del club: mora, suspensión automática y cálculo de la cuota
           de grupo familiar.
         </p>
       </div>
 
       {forbidden ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           No tenés permiso para ver ni editar la Configuración General. Esta sección es exclusiva
           de SuperAdmin.
         </p>
       ) : loadError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {loadError}
         </p>
       ) : (

@@ -16,8 +16,8 @@ export default async function NuevaReservaPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Nueva reserva</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-heading text-2xl font-bold tracking-tight">Nueva reserva</h2>
+        <p className="mt-0.5 text-muted-foreground">
           Si el espacio/horario ya está reservado, el backend rechaza la solicitud
           (RF-RES-09 bis).
         </p>
