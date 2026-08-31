@@ -38,7 +38,9 @@ export default async function InstructoresPage() {
         <div>
           <h2 className="font-heading text-2xl font-bold tracking-tight">Instructores</h2>
           <p className="mt-0.5 text-muted-foreground">
-            Instructores con acceso al mini-portal de actividades asignadas.
+            {loadError
+              ? "Instructores con acceso al mini-portal de actividades asignadas."
+              : `${instructores.length} ${instructores.length === 1 ? "instructor" : "instructores"}.`}
           </p>
         </div>
         <InstructorAltaDialog />

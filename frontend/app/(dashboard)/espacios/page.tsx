@@ -40,7 +40,9 @@ export default async function EspaciosPage() {
         <div>
           <h2 className="font-heading text-2xl font-bold tracking-tight">Espacios</h2>
           <p className="mt-0.5 text-muted-foreground">
-            Canchas, salones y espacios reservables del club.
+            {loadError
+              ? "Canchas, salones y espacios reservables del club."
+              : `${espacios.length} ${espacios.length === 1 ? "espacio" : "espacios"}.`}
           </p>
         </div>
         <Link href="/espacios/nuevo" className={buttonVariants()}>

@@ -57,7 +57,9 @@ export default async function ActividadesPage({ searchParams }: ActividadesPageP
         <div>
           <h2 className="font-heading text-2xl font-bold tracking-tight">Actividades</h2>
           <p className="mt-0.5 text-muted-foreground">
-            Actividades deportivas y recreativas del club.
+            {loadError
+              ? "Actividades deportivas y recreativas del club."
+              : `${actividades.length} ${actividades.length === 1 ? "actividad" : "actividades"}.`}
           </p>
         </div>
         <Link href="/actividades/nueva" className={buttonVariants()}>

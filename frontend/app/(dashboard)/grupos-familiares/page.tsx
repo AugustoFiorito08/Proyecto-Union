@@ -48,7 +48,9 @@ export default async function GruposFamiliaresPage({
         <div>
           <h2 className="font-heading text-2xl font-bold tracking-tight">Grupos Familiares</h2>
           <p className="mt-0.5 text-muted-foreground">
-            Titulares, integrantes y estado de los grupos familiares.
+            {loadError
+              ? "Titulares, integrantes y estado de los grupos familiares."
+              : `${grupos.length} ${grupos.length === 1 ? "grupo familiar" : "grupos familiares"}.`}
           </p>
         </div>
         <Link href="/grupos-familiares/nuevo" className={buttonVariants()}>
