@@ -562,6 +562,20 @@ Convención: todos los endpoints administrativos bajo `/api/*`, los del Portal d
 
 **Nota de reconciliación (Reportes):** encontré y corregí un mismatch de contrato real: el frontend había asumido 3 campos planos (`cantidadActivos`/`cantidadSuspendidos`/`cantidadInactivos`) para el conteo de Socios por estado, pero el backend real agrupa esos 3 valores en un array `porEstado: [{estado, cantidad}]` (siempre con los 3 estados presentes, incluso en 0) — hubiera roto las tarjetas de KPI del tab "Socios" mostrando `undefined`. Los otros dos endpoints (Actividades, Espacios) coincidieron exactamente con lo que el frontend había asumido.
 
+### Pase de identidad visual ✅ (2026-08-31)
+
+Cerrado todo el alcance funcional (Etapas 0–7), se hizo el pase de diseño acordado con el usuario: una sola pasada al final, extrayendo la identidad real del export de Figma (`diseño-web/`) y aplicándola sobre los componentes ya construidos, en vez de re-tocar estilos etapa por etapa.
+
+**Por qué existía este hueco:** la auditoría de Figma de §7 fue *estructural* (rutas, componentes reutilizables, gaps de modelo de datos) y nunca extrajo tokens visuales — el único rastro era una mención suelta a "verde institucional" para el sidebar, sin ningún valor concreto. Hasta este pase, la app corría con el tema neutro por defecto de shadcn (`--primary: oklch(0.205 0 0)`, saturación cero).
+
+**Paleta, tomada de los píxeles reales del export (no estimada a ojo):** verde CAU `#00923F` (escudo, botones, acentos, foco), sidebar `#1C8248`, paneles oscuros `#0E663B`, fondo de app `#F1F1F1`, superficie de inputs `#F6F7F6`, texto `#1C211F`, badges `#D9F5E0`/`#1A8040`, y los 5 colores de gráficos del dashboard (`#3FC07A`, `#145EC8`, `#F47338`, `#745BD8`, `#20ACB8`). Convertidos a oklch para respetar el formato que ya usaba `globals.css`.
+
+**Bug real encontrado y corregido en el pase:** `globals.css` definía `--font-sans: var(--font-sans)` (auto-referencia, variable vacía) mientras `layout.tsx` exponía `--font-geist-sans` — nunca se conectaron, así que `font-sans` no resolvía a nada y **toda la aplicación venía renderizando en el serif por defecto del navegador (Times New Roman)**. Verificado en vivo con `getComputedStyle` antes de tocar nada. Se corrigió apuntando la variable a la fuente real y se pasó a Inter, la sans geométrica que corresponde al diseño.
+
+**Alcance del cambio:** el grueso del re-skin salió de reemplazar los tokens de `globals.css` (claro + oscuro), porque el proyecto ya usaba tokens semánticos casi en todos lados — se auditó y solo había 9 colores hardcodeados en todo el frontend, de los cuales se migraron los 3 `emerald` de "acceso permitido" a `primary`; los `amber` de advertencia se dejaron deliberadamente fuera del verde institucional (un warning en color de marca deja de leerse como advertencia). Además: nuevo componente `<LogoCau />` (escudo reconstruido como SVG vectorial, con variante monocromo para fondos verdes — se descartó recortar el PNG del diseño porque el logo se usa entre 20px y 250px y el recorte disponible era de 56px), sidebar verde con logo y **estado activo** (píldora blanca, que el diseño mostraba y no existía en el código — sin él, con fondo verde sólido, no se distingue en qué sección estás), login rediseñado como panel partido con escudo y lema del club, landing pública con el escudo, favicon propio, y el nombre "Proyecto Unión" (nombre interno del proyecto) reemplazado por "Club Atlético Unión" en los 3 portales y en el `<title>`.
+
+**Límite conocido:** el diseño de Figma solo cubre pantallas en modo claro. El modo oscuro se derivó de la misma identidad (verde aclarado para mantener contraste sobre fondo oscuro) y no tiene contraparte en el diseño original contra la cual validarlo.
+
 ### Fase 2 — App del Socio (visión, no planificada en detalle)
 - [ ] Reutilización de `/api/me/*` desde app móvil
 - [ ] Notificaciones push

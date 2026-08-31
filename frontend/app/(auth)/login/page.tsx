@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LogoCau } from "@/components/logo-cau";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Ingresá tu email.").email("Ingresá un email válido."),
@@ -65,14 +66,35 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
-          <CardDescription>Club Atlético Unión — Sistema de gestión</CardDescription>
-        </CardHeader>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+      {/* Panel partido del diseño de Figma: identidad del club a la izquierda,
+          formulario a la derecha. En mobile el panel verde se oculta y queda
+          solo el formulario, con el escudo arriba (ver `<CardHeader>`). */}
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-xl bg-card shadow-sm md:grid-cols-2">
+        <aside className="relative hidden flex-col items-center justify-center gap-1 overflow-hidden bg-[#0E663B] p-10 text-center text-white md:flex">
+          {/* Escudo grande de marca de agua, detrás del logo principal. */}
+          <LogoCau
+            variant="monocromo"
+            className="pointer-events-none absolute inset-0 m-auto size-[115%] opacity-[0.06]"
+            aria-hidden="true"
+          />
+          <LogoCau className="relative size-40 drop-shadow-sm" />
+          <h1 className="relative mt-5 font-heading text-2xl font-bold uppercase tracking-tight">
+            Club Atlético Unión
+          </h1>
+          <p className="relative text-xs font-medium uppercase tracking-[0.18em] text-white/75">
+            Pasión · Compromiso · Familia
+          </p>
+        </aside>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Card className="rounded-none border-0 bg-transparent shadow-none">
+          <CardHeader className="items-center text-center">
+            <LogoCau className="mx-auto mb-2 size-14 md:hidden" />
+            <CardTitle className="text-2xl">Bienvenido</CardTitle>
+            <CardDescription>Iniciá sesión para continuar</CardDescription>
+          </CardHeader>
+
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4">
             {serverError ? (
               <p
@@ -136,8 +158,9 @@ export default function LoginPage() {
               Solicitar una cuenta
             </Link>
           </CardFooter>
-        </form>
-      </Card>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

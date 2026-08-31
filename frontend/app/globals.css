@@ -7,9 +7,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* `--font-sans` apuntaba a sí misma (variable vacía), así que `font-sans` no
+     resolvía a nada y toda la app caía al serif por defecto del navegador —
+     bug real detectado en el pase de diseño. Ahora apunta a la fuente que
+     `layout.tsx` efectivamente carga. */
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-inter);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +52,83 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Identidad visual del Club Atlético Unión. Los valores salen de los píxeles
+   reales del export de Figma (`diseño-web/`), no de una aproximación: verde
+   institucional #00923F (escudo, botones, acentos), verde de sidebar #1C8248,
+   verde de paneles oscuros #0E663B, fondo de app #F1F1F1. Convertidos a oklch
+   para mantener el formato que ya usaba el archivo. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.9581 0 89.88); /* #F1F1F1 — fondo de app, las Cards van en blanco */
+  --foreground: oklch(0.2419 0.0082 169.61); /* #1C211F */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.2419 0.0082 169.61);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --popover-foreground: oklch(0.2419 0.0082 169.61);
+  --primary: oklch(0.5764 0.1614 149.32); /* #00923F — verde CAU */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9441 0.0405 153.13); /* #D9F5E0 — verde claro */
+  --secondary-foreground: oklch(0.4955 0.1304 151.98); /* #00763A */
+  --muted: oklch(0.9751 0.0017 145.56); /* #F6F7F6 — fondo de inputs */
+  --muted-foreground: oklch(0.551 0.0234 264.36);
+  --accent: oklch(0.9441 0.0405 153.13);
+  --accent-foreground: oklch(0.4955 0.1304 151.98);
+  --destructive: oklch(0.6573 0.2033 18.15); /* #F44C60 */
+  --border: oklch(0.9251 0.0042 157.17); /* #E4E7E5 */
+  --input: oklch(0.8452 0 89.88); /* #CCCCCC — borde de input del diseño */
+  --ring: oklch(0.5764 0.1614 149.32);
+  /* Colores de gráficos tomados de las barras/donut del dashboard de Figma. */
+  --chart-1: oklch(0.7202 0.1521 155.36); /* #3FC07A verde */
+  --chart-2: oklch(0.504 0.1793 258.97); /* #145EC8 azul */
+  --chart-3: oklch(0.6997 0.1741 43.03); /* #F47338 naranja */
+  --chart-4: oklch(0.5616 0.1835 288.23); /* #745BD8 violeta */
+  --chart-5: oklch(0.6812 0.1105 204.12); /* #20ACB8 teal */
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Sidebar verde institucional sólido, como en todas las pantallas del diseño. */
+  --sidebar: oklch(0.5362 0.1273 152.89); /* #1C8248 */
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.4955 0.1304 151.98);
+  --sidebar-accent: oklch(1 0 0 / 12%);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: oklch(1 0 0 / 40%);
 }
 
+/* Modo oscuro: el diseño de Figma no lo cubre (todas las pantallas son claras),
+   así que se deriva de la misma identidad — fondos neutros con un leve tinte
+   verde y el verde CAU aclarado para que mantenga contraste sobre oscuro. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.1897 0.0089 169.61);
+  --foreground: oklch(0.97 0.005 155);
+  --card: oklch(0.2419 0.0082 169.61);
+  --card-foreground: oklch(0.97 0.005 155);
+  --popover: oklch(0.2419 0.0082 169.61);
+  --popover-foreground: oklch(0.97 0.005 155);
+  --primary: oklch(0.7202 0.1521 155.36); /* verde CAU aclarado para contraste */
+  --primary-foreground: oklch(0.1897 0.0089 169.61);
+  --secondary: oklch(0.3 0.025 155);
+  --secondary-foreground: oklch(0.97 0.005 155);
+  --muted: oklch(0.3 0.015 155);
+  --muted-foreground: oklch(0.72 0.015 155);
+  --accent: oklch(0.3 0.025 155);
+  --accent-foreground: oklch(0.97 0.005 155);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.7202 0.1521 155.36);
+  --chart-1: oklch(0.7202 0.1521 155.36);
+  --chart-2: oklch(0.6 0.17 258.97);
+  --chart-3: oklch(0.6997 0.1741 43.03);
+  --chart-4: oklch(0.6216 0.1835 288.23);
+  --chart-5: oklch(0.6812 0.1105 204.12);
+  --sidebar: oklch(0.3407 0.0699 154.4); /* verde institucional oscurecido */
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.3407 0.0699 154.4);
+  --sidebar-accent: oklch(1 0 0 / 12%);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: oklch(1 0 0 / 40%);
 }
 
 @layer base {

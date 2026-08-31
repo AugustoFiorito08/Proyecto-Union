@@ -95,12 +95,12 @@ export function ControlAccesoScreen() {
         className={cn(
           "flex min-h-[65vh] flex-col items-center justify-center gap-6 rounded-xl border-4 p-10 text-center",
           permitido
-            ? "border-emerald-500 bg-emerald-500/10"
+            ? "border-primary bg-primary/10"
             : "border-destructive bg-destructive/10"
         )}
       >
         {permitido ? (
-          <CheckCircle2 className="size-20 text-emerald-500" aria-hidden="true" />
+          <CheckCircle2 className="size-20 text-primary" aria-hidden="true" />
         ) : (
           <XCircle className="size-20 text-destructive" aria-hidden="true" />
         )}
@@ -130,7 +130,7 @@ export function ControlAccesoScreen() {
         <p
           className={cn(
             "text-2xl font-semibold",
-            permitido ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+            permitido ? "text-primary" : "text-destructive"
           )}
         >
           {permitido ? "Acceso permitido" : (resultado.motivoDenegacion ?? "Acceso denegado")}

@@ -4,6 +4,7 @@ import { Dumbbell } from "lucide-react";
 import { getSessionToken, getSessionRole } from "@/lib/auth";
 import { decodeJwtPayload, type SessionClaims } from "@/lib/jwt";
 import { LogoutButton } from "@/components/logout-button";
+import { LogoCau } from "@/components/logo-cau";
 
 /**
  * Layout real del mini-portal del Instructor (SPEC.md §7.1, base
@@ -22,10 +23,13 @@ export default async function InstructorLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-          <Link href="/instructor/actividades" className="font-heading text-lg font-semibold">
-            Proyecto Unión
+      <aside className="hidden w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
+          <Link href="/instructor/actividades" className="flex items-center gap-2.5">
+            <LogoCau className="size-8 shrink-0" />
+            <span className="font-heading text-base font-bold leading-tight">
+              Club Atlético Unión
+            </span>
           </Link>
         </div>
 
@@ -48,7 +52,10 @@ export default async function InstructorLayout({ children }: LayoutProps<"/">) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4 md:px-6">
-          <p className="font-heading text-lg font-semibold md:hidden">Proyecto Unión</p>
+          <div className="flex items-center gap-2 md:hidden">
+            <LogoCau className="size-7 shrink-0" />
+            <p className="font-heading text-base font-bold">Club Atlético Unión</p>
+          </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               {displayName.slice(0, 2).toUpperCase()}

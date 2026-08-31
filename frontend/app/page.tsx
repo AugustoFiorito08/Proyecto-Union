@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { ConfiguracionPublica } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { LogoCau } from "@/components/logo-cau";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -35,9 +36,13 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-1 flex-col items-center justify-center gap-10 px-4 py-16 text-center">
       <div className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          {configuracion?.nombreClub || "Proyecto Unión"}
+        <LogoCau className="mx-auto size-24 sm:size-28" />
+        <h1 className="pt-1 font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+          {configuracion?.nombreClub || "Club Atlético Unión"}
         </h1>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+          Pasión · Compromiso · Familia
+        </p>
         <p className="max-w-xl text-muted-foreground">
           Sistema de gestión del Club Atlético Unión (CAU): socios, actividades, reservas de
           espacios y pagos, todo en un mismo lugar.

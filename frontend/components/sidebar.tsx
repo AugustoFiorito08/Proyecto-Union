@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   Home,
   Users,
@@ -22,6 +26,9 @@ import {
   ClipboardCheck,
   BarChart3,
 } from "lucide-react";
+
+import { LogoCau } from "@/components/logo-cau";
+import { cn } from "@/lib/utils";
 
 // Navegación de Etapa 1 + Etapa 2 parte 1 + Etapa 3 (Finanzas) + Etapa 4
 // (Comunicaciones) + Etapa 5 (Control de Acceso) + Etapa 6 (Solicitudes de
@@ -66,27 +73,69 @@ const CONFIG_ITEMS = [
   { href: "/configuracion/general", label: "General", icon: SlidersHorizontal },
 ] as const;
 
-export function Sidebar() {
+/**
+ * Ítem de navegación con estado activo (píldora blanca sobre el verde
+ * institucional, como en el diseño de Figma). El estado activo se resuelve con
+ * `usePathname()` — por eso el sidebar es un Client Component: sin él, con el
+ * fondo verde sólido, todos los ítems se ven iguales y no hay forma de saber en
+ * qué sección estás.
+ */
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  pathname,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  pathname: string;
+}) {
+  // Coincidencia exacta o de prefijo de segmento, para que `/socios/123` marque
+  // "Socios" pero `/control-acceso/historial` no marque también "Control de
+  // Acceso" (ambas rutas conviven en la navegación como ítems distintos).
+  const activo =
+    pathname === href ||
+    (pathname.startsWith(`${href}/`) &&
+      !NAV_ITEMS.some((otro) => otro.href !== href && otro.href === pathname));
+
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <Link href="/dashboard" className="font-heading text-lg font-semibold">
-          Proyecto Unión
+    <li>
+      <Link
+        href={href}
+        aria-current={activo ? "page" : undefined}
+        className={cn(
+          "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+          activo
+            ? "bg-sidebar-primary font-semibold text-sidebar-primary-foreground"
+            : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Icon className="size-4 shrink-0" aria-hidden="true" />
+        {label}
+      </Link>
+    </li>
+  );
+}
+
+export function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+      <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-4">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <LogoCau className="size-8 shrink-0" />
+          <span className="font-heading text-base font-bold leading-tight">
+            Club Atlético Unión
+          </span>
         </Link>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {NAV_ITEMS.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                {item.label}
-              </Link>
-            </li>
+            <NavLink key={item.href} {...item} pathname={pathname} />
           ))}
         </ul>
 
@@ -97,15 +146,7 @@ export function Sidebar() {
           </div>
           <ul className="space-y-1">
             {CONFIG_ITEMS.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                  {item.label}
-                </Link>
-              </li>
+              <NavLink key={item.href} {...item} pathname={pathname} />
             ))}
           </ul>
         </div>
