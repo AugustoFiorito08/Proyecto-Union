@@ -149,5 +149,14 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Corre en todo excepto assets estáticos y rutas de API (la API interna de
   // Next maneja su propia autenticación/proxy hacia el backend .NET).
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  //
+  // `icon.png` tiene que estar excluido igual que `favicon.ico`: el App Router
+  // sirve el favicon de `app/icon.png` en la ruta `/icon.png`, y sin esta
+  // exclusión el middleware lo interceptaba y lo redirigía al login (307). El
+  // navegador no podía bajarlo y terminaba mostrando en la pestaña el favicon
+  // que tuviera cacheado para `localhost` — el de cualquier otro proyecto que
+  // hubiera corrido antes en ese puerto.
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|opengraph-image|robots.txt|sitemap.xml).*)",
+  ],
 };
