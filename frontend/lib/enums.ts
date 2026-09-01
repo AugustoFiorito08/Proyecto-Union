@@ -27,6 +27,7 @@ import type {
   Modalidad,
   ModalidadInscripcion,
   Parentesco,
+  SocioEstado,
   TipoComunicacion,
   TipoPago,
   TipoReserva,
@@ -181,6 +182,13 @@ export const ESTADO_CONSULTA_A_INT: Record<EstadoConsulta, number> = {
   Pendiente: 1,
   Respondida: 2,
   Cerrada: 3,
+};
+
+/** `EstadoSocio` del backend (`Socio.cs`), para el filtro `?estado=` de `GET /api/socios`. */
+export const ESTADO_SOCIO_A_INT: Record<SocioEstado, number> = {
+  Activo: 1,
+  Suspendido: 2,
+  Inactivo: 3,
 };
 
 /**
